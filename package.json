@@ -6,7 +6,9 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "github-build": "ng build --configuration production --base-href 'https://japsert.github.io/pyrenees/'",
+    "github-deploy": "npx angular-cli-ghpages --dir=dist/pyrenees/browser"
   },
   "private": true,
   "packageManager": "npm@11.13.0",
@@ -17,6 +19,7 @@
     "@angular/forms": "^21.2.0",
     "@angular/platform-browser": "^21.2.0",
     "@angular/router": "^21.2.0",
+    "mapbox-gl": "^3.22.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
@@ -25,6 +28,7 @@
     "@angular/cli": "^21.2.8",
     "@angular/compiler-cli": "^21.2.0",
     "@tailwindcss/postcss": "^4.1.12",
+    "@types/node": "^25.6.0",
     "jsdom": "^28.0.0",
     "postcss": "^8.5.3",
     "prettier": "^3.8.1",

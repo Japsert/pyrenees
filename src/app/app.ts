@@ -1,11 +1,13 @@
 import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+//import { RouterOutlet } from '@angular/router';
+import { Map } from './map/map';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
-  templateUrl: './app.html',
-  styleUrl: './app.css',
+  imports: [
+    Map
+],
+  templateUrl: './app.html'
 })
 export class App {
   protected readonly title = signal('pyrenees');
