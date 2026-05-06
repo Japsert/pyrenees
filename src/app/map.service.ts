@@ -94,6 +94,41 @@ export class MapService {
   }
 
   private addRouteLayers(map: Map) {
+    map
+      .addSource('gr10-tileset', {
+        type: 'vector',
+        url: 'mapbox://japsert-.cmolcxvbv061n1opdqvgpna20-33hp1',
+      })
+      .addSource('gr11-tileset', {
+        type: 'vector',
+        url: 'mapbox://japsert-.cmolcxw8e09v01mk0zoifowc7-4xu85',
+      })
+      .addLayer({
+        id: 'gr10',
+        type: 'line',
+        source: 'gr10-tileset',
+        'source-layer': 'GR10',
+        paint: {
+          'line-color': 'hsl(0, 100%, 50%)',
+          'line-width': 3,
+        },
+        layout: {
+          'line-join': 'round',
+        },
+      })
+      .addLayer({
+        id: 'gr11',
+        type: 'line',
+        source: 'gr11-tileset',
+        'source-layer': 'GR11',
+        paint: {
+          'line-color': 'hsl(200, 100%, 50%)',
+          'line-width': 3,
+        },
+        layout: {
+          'line-join': 'round',
+        },
+      });
   }
 
   private syncIfActive(source: Map, target: Map) {
