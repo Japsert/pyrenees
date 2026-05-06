@@ -1,37 +1,30 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
-import { PLATFORM_ID } from '@angular/core';
-import { environment } from '../../environments/environment';
+import { StyleSwitcher } from './style-switcher/style-switcher';
+import { MapService } from '../map.service';
 
 @Component({
   selector: 'app-map',
   standalone: true,
   templateUrl: './map.html',
-  styleUrls: ['./map.css']
+  styleUrls: ['./map.css'],
+  imports: [StyleSwitcher],
 })
 export class Map implements OnInit, OnDestroy {
-  @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef;
-  map: any;
-  private platformId = inject(PLATFORM_ID);
+  @ViewChild('map1Container', { static: true }) map1Container!: ElementRef;
+  @ViewChild('map2Container', { static: true }) map2Container!: ElementRef;
+  @ViewChild('fadeContainer', {static: true}) fadeContainer!: ElementRef;
+
+  private mapService = inject(MapService);
 
   async ngOnInit() {
-    if (isPlatformBrowser(this.platformId)) { // SSR check to ensure this runs in the browser as GL JS requires a browser environment
-      const mapboxgl = (await import('mapbox-gl')).default
-
-      this.map = new mapboxgl.Map({
-        accessToken: environment.MAPBOX_ACCESS_KEY,
-        container: this.mapContainer.nativeElement,
-        style: 'mapbox://styles/japsert-/cmog7wz6t000f01qwgqldfyeo',
-        center: [-0.08138, 42.79418],
-        zoom: 8,
-        pitch: 60,
-      });
-    }
+    await this.mapService.initMaps(
+      this.map1Container.nativeElement,
+      this.map2Container.nativeElement,
+      this.fadeContainer.nativeElement
+    );
   }
 
   ngOnDestroy(): void {
-    if (this.map) {
-      this.map.remove();
-    }
+    this.mapService.destroyMaps();
   }
 }

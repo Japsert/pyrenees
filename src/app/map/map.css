@@ -1,10 +1,14 @@
 :host {
   display: block;
+  position: absolute;
+  inset: 0;
 }
 
-#map-container {
+#map1-container, #map2-container, #fade-container {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 100%;
+  inset: 0;
+}
+
+#fade-container.fade-in {
+  opacity: 1;
 }
