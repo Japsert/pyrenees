@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../environments/environment';
 import { Map, NavigationControl, Popup } from 'mapbox-gl';
 import { Style } from './style.enum';
+import { RoutePlannerControl } from './map/route-control/route-control';
 
 @Injectable({
   providedIn: 'root',
@@ -32,6 +33,7 @@ export class MapService {
     console.debug('Adding map 1...');
     this.map1 = this.createMap(container1, 'mapbox://styles/japsert-/cmotu1b3x007o01s67wvi4hiv');
     this.map1.addControl(new NavigationControl({ visualizePitch: true }));
+    this.map1.addControl(new RoutePlannerControl());
 
     this.map1.once('load', () => {
       this.addRouteLayers(this.map1!);
