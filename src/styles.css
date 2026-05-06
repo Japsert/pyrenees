@@ -4,3 +4,11 @@ html, body {
   margin: 0;
   padding: 0;
 }
+
+.mapboxgl-ctrl button[aria-pressed='true']:not(:disabled) {
+  background-color: #ccc;
+}
+
+.mapboxgl-ctrl button[aria-pressed='true']:not(:disabled):hover {
+  background-color: #bbb;
+}

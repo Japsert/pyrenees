@@ -3,20 +3,23 @@ import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../environments/environment';
 import { Map, NavigationControl, Popup } from 'mapbox-gl';
 import { Style } from './style.enum';
-import { RoutePlannerControl } from './map/route-control/route-control';
+import { RouteControl } from './map/route-control/route-control';
+import { RoutePlannerService } from './route-planner.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class MapService {
-  private platformId = inject(PLATFORM_ID);
   activeStyle: Style = Style.OUTDOOR;
-  map1Container: HTMLElement | null = null;
-  map2Container: HTMLElement | null = null;
-  fadeContainer: HTMLElement | null = null;
-  map1: Map | null = null;
-  map2: Map | null = null;
-  doFade: boolean = false;
+  private platformId = inject(PLATFORM_ID);
+  private routePlannerService = inject(RoutePlannerService);
+  private map1Container: HTMLElement | null = null;
+  private map2Container: HTMLElement | null = null;
+  private fadeContainer: HTMLElement | null = null;
+  private map1: Map | null = null;
+  private map2: Map | null = null;
+  private doFade: boolean = false;
+  private isEditingRoute: boolean = false;
 
   async initMaps(
     container1: HTMLElement,
@@ -33,7 +36,8 @@ export class MapService {
     console.debug('Adding map 1...');
     this.map1 = this.createMap(container1, 'mapbox://styles/japsert-/cmotu1b3x007o01s67wvi4hiv');
     this.map1.addControl(new NavigationControl({ visualizePitch: true }));
-    this.map1.addControl(new RoutePlannerControl());
+    this.map1.addControl(new RouteControl(this, this.routePlannerService));
+    this.addRoutePlannerHandlers(this.map1);
 
     this.map1.once('load', () => {
       this.addRouteLayers(this.map1!);
@@ -177,6 +181,15 @@ export class MapService {
       .on('mouseleave', 'shelters', () => (map.getCanvas().style.cursor = ''));
   }
 
+  private addRoutePlannerHandlers(map: Map) {
+    map.on('click', (e) => {
+      if (!this.isEditingRoute) return;
+
+      const { lng, lat } = e.lngLat;
+      this.routePlannerService;
+    });
+  }
+
   private syncIfActive(source: Map, target: Map) {
     if (source.getContainer().hidden) return;
     this.sync(source, target);
@@ -190,5 +203,9 @@ export class MapService {
       pitch: source.getPitch(),
       bearing: source.getBearing(),
     });
+  }
+
+  toggleEditingRoute(): void {
+    this.isEditingRoute = !this.isEditingRoute;
   }
 }
