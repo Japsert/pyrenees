@@ -4,10 +4,11 @@ import {
   PLATFORM_ID,
   ApplicationRef,
   EnvironmentInjector,
+  effect,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../environments/environment';
-import { Map, NavigationControl, Popup } from 'mapbox-gl';
+import { GeoJSONSource, Map, NavigationControl, Popup } from 'mapbox-gl';
 import { Style } from './style.enum';
 import { RouteControl } from './map/route-control/route-control';
 import { RoutePlannerService } from './route-planner.service';
@@ -30,6 +31,14 @@ export class MapService {
   private appRef = inject(ApplicationRef);
   private injector = inject(EnvironmentInjector);
 
+  constructor() {
+    effect(() => {
+      console.debug('signal updated, setting new data');
+      const newRoute = this.routePlannerService.route();
+      this.map1?.getSource<GeoJSONSource>('route')?.setData(newRoute);
+    });
+  }
+
   async initMaps(
     container1: HTMLElement,
     container2: HTMLElement,
@@ -51,6 +60,23 @@ export class MapService {
     this.map1.once('load', () => {
       this.addRouteLayers(this.map1!);
       //this.addShelterLayer(this.map1!);
+      this.map1!.addSource('route', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [],
+        },
+      });
+      this.map1!.addLayer({
+        id: 'route',
+        type: 'line',
+        source: 'route',
+        paint: {
+          'line-color': '#ff00ff',
+          'line-width': 3,
+        },
+      });
+
       console.debug('Map 1 done!');
 
       console.debug('Adding map 2...');
@@ -194,8 +220,8 @@ export class MapService {
     map.on('click', (e) => {
       if (!this.isEditingRoute) return;
 
-      const { lng, lat } = e.lngLat;
-      this.routePlannerService;
+      this.routePlannerService.appendWaypoint(e.lngLat);
+      console.debug(this.routePlannerService.route());
     });
   }
 
@@ -216,5 +242,10 @@ export class MapService {
 
   toggleEditingRoute(): void {
     this.isEditingRoute = !this.isEditingRoute;
+    // Change cursor while editing
+    document.documentElement.style.setProperty(
+      '--map-cursor',
+      this.isEditingRoute ? 'crosshair' : 'grab',
+    );
   }
 }
