@@ -1,2 +1,4 @@
+<button title="Undo" (click)="undo()" [disabled]="!canUndo()">↩</button>
+<button title="Redo" (click)="redo()" [disabled]="!canRedo()">↪</button>
 <button [attr.aria-pressed]="isEditing" title="Edit route" (click)="edit()">✏️</button>
 <button title="Clear route" (click)="clear()">🗑️</button>

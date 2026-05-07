@@ -5,10 +5,22 @@ html, body {
   padding: 0;
 }
 
+/* Overriding Mapbox's default control styling */
+
 .mapboxgl-ctrl button[aria-pressed='true']:not(:disabled) {
   background-color: #ccc;
 }
 
 .mapboxgl-ctrl button[aria-pressed='true']:not(:disabled):hover {
   background-color: #bbb;
+}
+
+/* To be able to change the map cursor in different components */
+
+:root {
+  --map-cursor: grab;
+}
+
+.mapboxgl-canvas-container.mapboxgl-interactive {
+  cursor: var(--map-cursor) !important;
 }

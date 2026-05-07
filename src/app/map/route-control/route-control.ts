@@ -1,26 +1,61 @@
-import { ApplicationRef, Component, ComponentRef, createComponent, EnvironmentInjector, inject } from '@angular/core';
+import {
+  ApplicationRef,
+  Component,
+  ComponentRef,
+  createComponent,
+  EnvironmentInjector,
+  HostListener,
+  inject,
+} from '@angular/core';
 import { MapService } from '../../map.service';
 import { IControl } from 'mapbox-gl';
 import { RoutePlannerService } from '../../route-planner.service';
 
 @Component({
   selector: 'app-route-control',
-  template: `
-    <button [attr.aria-pressed]="isEditing" title="Edit route" (click)="edit()">✏️</button>
-    <button title="Clear route" (click)="clear()">🗑️</button>
-  `,
+  templateUrl: './route-control.html',
 })
 export class RouteControlComponent {
   isEditing = false;
   private mapService = inject(MapService);
   private routePlannerService = inject(RoutePlannerService);
 
-  edit() {
+  @HostListener('document:keydown', ['$event'])
+  onKeyDown(e: KeyboardEvent) {
+    const modifier = e.ctrlKey || e.metaKey;
+    if (!modifier) return;
+
+    if ((e.metaKey && !e.shiftKey && e.key == 'z') || (e.ctrlKey && e.key == 'z')) {
+      e.preventDefault();
+      this.undo();
+    } else if ((e.metaKey && e.shiftKey && e.key == 'z') || (e.ctrlKey && e.key == 'y')) {
+      e.preventDefault();
+      this.redo();
+    }
+  }
+
+  undo(): void {
+    this.routePlannerService.undo();
+  }
+
+  redo(): void {
+    this.routePlannerService.redo();
+  }
+
+  canUndo(): boolean {
+    return this.routePlannerService.canUndo();
+  }
+
+  canRedo(): boolean {
+    return this.routePlannerService.canRedo();
+  }
+
+  edit(): void {
     this.isEditing = !this.isEditing;
     this.mapService.toggleEditingRoute();
   }
 
-  clear() {
+  clear(): void {
     this.routePlannerService.clear();
   }
 }
@@ -32,7 +67,7 @@ export class RouteControl implements IControl {
 
   constructor(
     private appRef: ApplicationRef,
-    private injector: EnvironmentInjector
+    private injector: EnvironmentInjector,
   ) {}
 
   onAdd(): HTMLElement {
