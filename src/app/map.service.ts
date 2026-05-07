@@ -1,4 +1,10 @@
-import { Injectable, inject, PLATFORM_ID } from '@angular/core';
+import {
+  Injectable,
+  inject,
+  PLATFORM_ID,
+  ApplicationRef,
+  EnvironmentInjector,
+} from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../environments/environment';
 import { Map, NavigationControl, Popup } from 'mapbox-gl';
@@ -21,6 +27,9 @@ export class MapService {
   private doFade: boolean = false;
   private isEditingRoute: boolean = false;
 
+  private appRef = inject(ApplicationRef);
+  private injector = inject(EnvironmentInjector);
+
   async initMaps(
     container1: HTMLElement,
     container2: HTMLElement,
@@ -36,7 +45,7 @@ export class MapService {
     console.debug('Adding map 1...');
     this.map1 = this.createMap(container1, 'mapbox://styles/japsert-/cmotu1b3x007o01s67wvi4hiv');
     this.map1.addControl(new NavigationControl({ visualizePitch: true }));
-    this.map1.addControl(new RouteControl(this, this.routePlannerService));
+    this.map1.addControl(new RouteControl(this.appRef, this.injector));
     this.addRoutePlannerHandlers(this.map1);
 
     this.map1.once('load', () => {
