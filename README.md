@@ -11,11 +11,10 @@ An interactive 3D map using Mapbox. Shows the GR10 and GR11 trails, and allows f
 - [ ] Shelters
 - [ ] Route planning
   - [x] Route drawing and clearing
-    - [ ] Showing markers!
   - [x] Undo/redo
   - [ ] Route editing
   - [ ] Route info
-  - [ ] Local storage
+  - [x] Local storage
   - [ ] Export/import
   - [ ] Route waypoints (shelters)
   - [ ] Route splitting
