@@ -1,76 +1,107 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
-import { LngLat } from 'mapbox-gl';
+import { computed, inject, Injectable, signal, OnInit } from '@angular/core';
 import { FeatureCollection, Position } from 'geojson';
 import { HttpClient } from '@angular/common/http';
+import { map, Subject, switchMap } from 'rxjs';
+import { Route, Track, Waypoint } from './route/route';
 
 @Injectable({
   providedIn: 'root',
 })
 export class RoutePlannerService {
-  private readonly _route = signal<FeatureCollection>({ type: 'FeatureCollection', features: [] });
-  readonly route = this._route.asReadonly();
-  private waypoints = signal<Position[]>([]);
-  private history = signal<Position[][]>([]);
-  private future = signal<Position[][]>([]);
+  route = signal<Route>(new Route());
+  private history = signal<Route[]>([]);
+  private future = signal<Route[]>([]);
   readonly canUndo = computed(() => this.history().length > 0);
   readonly canRedo = computed(() => this.future().length > 0);
+  private apiCall = new Subject<Waypoint[]>();
 
   private http = inject(HttpClient);
   private readonly BROUTER_API = 'https://brouter.de/brouter';
 
-  appendWaypoint(lnglat: LngLat): void {
+  constructor() {
+    // RxJS magic to cancel in-flight requests when user clicks rapidly
+    this.apiCall
+      .pipe(
+        switchMap((waypoints) => {
+          return this.http
+            .get<FeatureCollection>(this.BROUTER_API, {
+              params: {
+                lonlats: waypoints.map(({ position: [lon, lat] }) => `${lon},${lat}`).join('|'),
+                profile: 'shortest',
+                alternativeidx: 0,
+                format: 'geojson',
+              },
+            })
+            .pipe(map((track) => ({ waypoints, track })));
+        }),
+      )
+      .subscribe(({ waypoints, track }) => {
+        this.setRoute(new Route(waypoints, new Track(track)));
+      });
+
+    // Load route from local storage
+    this.loadRoute();
+  }
+
+  appendWaypoint(wp: Waypoint): void {
+    console.log('appendWaypoint called', wp);
     this.pushHistory();
-    const { lng, lat } = lnglat;
-    this.waypoints.update((w) => [...w, [lng, lat] as Position]);
+    const next = this.route().clone();
+    next.waypoints.push(wp);
+    this.setRoute(next);
     this.reroute();
   }
 
   clear(): void {
     this.pushHistory();
-    this.waypoints.set([]);
-    this._route.set({ type: 'FeatureCollection', features: [] });
+    this.setRoute(new Route());
   }
 
   undo(): void {
     if (!this.canUndo()) return;
-    this.future.update((f) => [this.waypoints(), ...f]);
-    this.waypoints.set(this.history().at(-1)!);
-    this.history.update((h) => h.slice(0, -1));
+    const h = this.history();
+    this.future.update((f) => [this.route(), ...f]);
+    this.setRoute(h.at(-1)!);
+    this.history.set(h.slice(0, -1));
     this.reroute();
   }
 
   redo(): void {
     if (!this.canRedo()) return;
-    this.history.update((h) => [...h, this.waypoints()]);
-    this.waypoints.set(this.future().at(0)!);
-    this.future.update((f) => f.slice(1));
+    const f = this.future();
+    this.history.update((h) => [...h, this.route()]);
+    this.setRoute(f[0]);
+    this.future.set(f.slice(1));
     this.reroute();
   }
 
   private pushHistory(): void {
-    this.history.update((h) => [...h, this.waypoints()]);
+    this.history.update((h) => [...h, this.route()]);
     this.future.set([]);
   }
 
   private reroute(): void {
-    if (this.waypoints().length < 2) {
-      this._route.set({ type: 'FeatureCollection', features: []});
-      return;
-    }
-    this.http
-      .get<FeatureCollection>(this.BROUTER_API, {
-        params: {
-          lonlats: this.waypoints()
-            .map(([lon, lat]) => `${lon},${lat}`)
-            .join('|'),
-          profile: 'hiking-mountain',
-          alternativeidx: 0,
-          format: 'geojson',
-        },
-      })
-      .subscribe((route) => {
-        this._route.set(route);
-        console.debug(`Route updated. Now contains ${this._route()!.features.length} features`);
-      });
+    const waypoints = this.route().waypoints;
+    if (waypoints.length < 2) return;
+
+    this.apiCall.next(waypoints);
+  }
+
+  private setRoute(route: Route): void {
+    this.route.set(route);
+    this.saveRoute();
+  }
+
+  private saveRoute(): void {
+    const fc: FeatureCollection = this.route().toGeoJSON();
+    localStorage.setItem('route', JSON.stringify(fc));
+  }
+
+  private loadRoute() {
+    const savedRoute = localStorage.getItem('route');
+    if (savedRoute == null) return;
+
+    const fc = JSON.parse(savedRoute) as FeatureCollection;
+    this.setRoute(Route.fromGeoJSON(fc));
   }
 }

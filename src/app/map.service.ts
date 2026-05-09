@@ -12,6 +12,8 @@ import { GeoJSONSource, Map, NavigationControl, Popup } from 'mapbox-gl';
 import { Style } from './style.enum';
 import { RouteControl } from './map/route-control/route-control';
 import { RoutePlannerService } from './route-planner.service';
+import { Route, Waypoint } from './route/route';
+import { Property } from 'csstype';
 
 @Injectable({
   providedIn: 'root',
@@ -33,10 +35,14 @@ export class MapService {
 
   constructor() {
     effect(() => {
-      console.debug('signal updated, setting new data');
-      const newRoute = this.routePlannerService.route();
-      this.map1?.getSource<GeoJSONSource>('route')?.setData(newRoute);
+      const route = this.routePlannerService.route();
+      if (this.map1) this.updateRouteData(this.map1, route);
+      if (this.map2) this.updateRouteData(this.map2, route);
     });
+  }
+
+  updateRouteData(map: Map, route: Route): void {
+    map.getSource<GeoJSONSource>('route')?.setData(route.toGeoJSON());
   }
 
   async initMaps(
@@ -58,25 +64,10 @@ export class MapService {
     this.addRoutePlannerHandlers(this.map1);
 
     this.map1.once('load', () => {
-      this.addRouteLayers(this.map1!);
+      this.addTrailLayers(this.map1!);
       //this.addShelterLayer(this.map1!);
-      this.map1!.addSource('route', {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: [],
-        },
-      });
-      this.map1!.addLayer({
-        id: 'route',
-        type: 'line',
-        source: 'route',
-        paint: {
-          'line-color': '#ff00ff',
-          'line-width': 3,
-        },
-      });
-
+      this.addRouteLayer(this.map1!);
+      this.updateRouteData(this.map1!, this.routePlannerService.route());
       console.debug('Map 1 done!');
 
       console.debug('Adding map 2...');
@@ -86,8 +77,10 @@ export class MapService {
       this.map2.addControl(new NavigationControl({ visualizePitch: true }));
 
       this.map2.once('load', () => {
-        this.addRouteLayers(this.map2!);
+        this.addTrailLayers(this.map2!);
         //this.addShelterLayer(this.map2!);
+        this.addRouteLayer(this.map2!);
+        this.updateRouteData(this.map2!, this.routePlannerService.route());
         console.debug('Map 2 done!');
       });
     });
@@ -109,9 +102,13 @@ export class MapService {
       accessToken: environment.MAPBOX_ACCESS_KEY,
       container,
       style,
-      center: [-0.08138, 42.79418],
-      zoom: 8,
-      pitch: 60,
+      hash: true,
+      attributionControl: false,
+      logoPosition: 'bottom-right',
+      pitchRotateKey: 'Meta',
+      center: [0.005708026821338308, 42.68359109598495],
+      zoom: 11,
+      pitch: 40,
     });
   }
 
@@ -137,7 +134,7 @@ export class MapService {
     this.map2Container.hidden = style == Style.OUTDOOR;
   }
 
-  private addRouteLayers(map: Map): void {
+  private addTrailLayers(map: Map): void {
     map
       .addSource('gr10-tileset', {
         type: 'vector',
@@ -216,12 +213,51 @@ export class MapService {
       .on('mouseleave', 'shelters', () => (map.getCanvas().style.cursor = ''));
   }
 
+  private addRouteLayer(map: Map): void {
+    map
+      .addSource('route', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [],
+        },
+      })
+      .addLayer({
+        id: 'route-line',
+        type: 'line',
+        source: 'route',
+        filter: ['==', '$type', 'LineString'],
+        paint: {
+          'line-color': '#ff00ff',
+          'line-width': 3,
+        },
+      })
+      .addLayer({
+        id: 'waypoints',
+        type: 'circle',
+        source: 'route',
+        filter: ['==', '$type', 'Point'],
+        paint: {
+          'circle-radius': 6,
+          'circle-color': '#ff00ff',
+          'circle-stroke-color': '#fff',
+          'circle-stroke-width': 2,
+        },
+      })
+      .on('mouseenter', 'route-line', () => {
+        map.setPaintProperty('route-line', 'line-width', 6);
+        this.setMapCursor('grab');
+      })
+      .on('mouseleave', 'route-line', () => map.setPaintProperty('route-line', 'line-width', 3));
+  }
+
   private addRoutePlannerHandlers(map: Map) {
     map.on('click', (e) => {
+      console.debug(`Clicked at ${e.lngLat}`);
       if (!this.isEditingRoute) return;
 
-      this.routePlannerService.appendWaypoint(e.lngLat);
-      console.debug(this.routePlannerService.route());
+      const { lng, lat } = e.lngLat;
+      this.routePlannerService.appendWaypoint(new Waypoint([lng, lat]));
     });
   }
 
@@ -243,9 +279,10 @@ export class MapService {
   toggleEditingRoute(): void {
     this.isEditingRoute = !this.isEditingRoute;
     // Change cursor while editing
-    document.documentElement.style.setProperty(
-      '--map-cursor',
-      this.isEditingRoute ? 'crosshair' : 'grab',
-    );
+    this.setMapCursor(this.isEditingRoute ? 'crosshair' : 'grab');
+  }
+
+  private setMapCursor(style: Property.Cursor) {
+    document.documentElement.style.setProperty('--map-cursor', style);
   }
 }
