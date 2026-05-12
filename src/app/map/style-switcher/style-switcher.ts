@@ -1,11 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { MapService } from '../../map.service';
-import { Style } from '../../style.enum';
-
-const STYLE_COLORS = new Map([
-  [Style.OUTDOOR, 'bg-green-800'],
-  [Style.SATELLITE, 'bg-amber-50'],
-]);
+import { MapStyle } from '../../style.enum';
 
 @Component({
   selector: 'app-style-switcher',
@@ -13,13 +8,13 @@ const STYLE_COLORS = new Map([
   templateUrl: './style-switcher.html',
 })
 export class StyleSwitcher {
-  private mapService = inject(MapService);
+  private readonly mapService = inject(MapService);
+
+  protected currentStyleColor = computed(() =>
+    this.mapService.activeStyle() == MapStyle.OUTDOOR ? 'bg-amber-50' : 'bg-green-800',
+  );
 
   switchStyle() {
     this.mapService.switchStyle();
-  }
-
-  getCurrentStyleColor(): string {
-    return STYLE_COLORS.get(this.mapService.activeStyle)!;
   }
 }

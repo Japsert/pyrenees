@@ -12,15 +12,15 @@ import { MapService } from '../map.service';
 export class Map implements OnInit, OnDestroy {
   @ViewChild('map1Container', { static: true }) map1Container!: ElementRef;
   @ViewChild('map2Container', { static: true }) map2Container!: ElementRef;
-  @ViewChild('fadeContainer', {static: true}) fadeContainer!: ElementRef;
+  @ViewChild('fadeContainer', { static: true }) fadeContainer!: ElementRef;
 
-  private mapService = inject(MapService);
+  private readonly mapService = inject(MapService);
 
-  async ngOnInit() {
-    await this.mapService.initMaps(
+  ngOnInit() {
+    this.mapService.initMaps(
       this.map1Container.nativeElement,
       this.map2Container.nativeElement,
-      this.fadeContainer.nativeElement
+      this.fadeContainer.nativeElement,
     );
   }
 
