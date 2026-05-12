@@ -9,13 +9,13 @@ import { Route, Track, Waypoint } from './route/route';
 })
 export class RoutePlannerService {
   route = signal<Route>(new Route());
-  private history = signal<Route[]>([]);
-  private future = signal<Route[]>([]);
+  private readonly history = signal<Route[]>([]);
+  private readonly future = signal<Route[]>([]);
   readonly canUndo = computed(() => this.history().length > 0);
   readonly canRedo = computed(() => this.future().length > 0);
-  private apiCall = new Subject<Waypoint[]>();
+  private readonly apiCall = new Subject<Waypoint[]>();
 
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
   private readonly BROUTER_API = 'https://brouter.de/brouter';
 
   constructor() {

@@ -16,9 +16,10 @@ import { RoutePlannerService } from '../../route-planner.service';
   templateUrl: './route-control.html',
 })
 export class RouteControlComponent {
-  isEditing = false;
-  private mapService = inject(MapService);
-  private routePlannerService = inject(RoutePlannerService);
+  private readonly mapService = inject(MapService);
+  private readonly routePlannerService = inject(RoutePlannerService);
+  
+  protected isEditing = this.mapService.isEditingRoute;
 
   @HostListener('document:keydown', ['$event'])
   onKeyDown(e: KeyboardEvent) {
@@ -51,7 +52,6 @@ export class RouteControlComponent {
   }
 
   edit(): void {
-    this.isEditing = !this.isEditing;
     this.mapService.toggleEditingRoute();
   }
 
@@ -66,8 +66,8 @@ export class RouteControl implements IControl {
   private componentRef!: ComponentRef<RouteControlComponent>;
 
   constructor(
-    private appRef: ApplicationRef,
-    private injector: EnvironmentInjector,
+    private readonly appRef: ApplicationRef,
+    private readonly injector: EnvironmentInjector,
   ) {}
 
   onAdd(): HTMLElement {

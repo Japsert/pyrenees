@@ -5,11 +5,12 @@ import {
   ApplicationRef,
   EnvironmentInjector,
   effect,
+  signal,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../environments/environment';
 import { GeoJSONSource, Map, NavigationControl, Popup } from 'mapbox-gl';
-import { Style } from './style.enum';
+import { MapStyle } from './style.enum';
 import { RouteControl } from './map/route-control/route-control';
 import { RoutePlannerService } from './route-planner.service';
 import { Route, Waypoint } from './route/route';
@@ -19,19 +20,20 @@ import { Property } from 'csstype';
   providedIn: 'root',
 })
 export class MapService {
-  activeStyle: Style = Style.OUTDOOR;
-  private platformId = inject(PLATFORM_ID);
-  private routePlannerService = inject(RoutePlannerService);
+  activeStyle = signal<MapStyle>(MapStyle.OUTDOOR);
+  isEditingRoute = signal(false);
+
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly routePlannerService = inject(RoutePlannerService);
   private map1Container: HTMLElement | null = null;
   private map2Container: HTMLElement | null = null;
   private fadeContainer: HTMLElement | null = null;
   private map1: Map | null = null;
   private map2: Map | null = null;
-  private doFade: boolean = false;
-  private isEditingRoute: boolean = false;
+  private readonly doFade: boolean = false;
 
-  private appRef = inject(ApplicationRef);
-  private injector = inject(EnvironmentInjector);
+  private readonly appRef = inject(ApplicationRef);
+  private readonly injector = inject(EnvironmentInjector);
 
   constructor() {
     effect(() => {
@@ -55,7 +57,7 @@ export class MapService {
     this.map1Container = container1;
     this.map2Container = container2;
     this.fadeContainer = fadeContainer;
-    this.setStyle(Style.OUTDOOR);
+    this.setStyle(MapStyle.OUTDOOR);
 
     console.debug('Adding map 1...');
     this.map1 = this.createMap(container1, 'mapbox://styles/japsert-/cmotu1b3x007o01s67wvi4hiv');
@@ -115,25 +117,18 @@ export class MapService {
   }
 
   switchStyle(): void {
-    if (this.doFade) this.fadeContainer!.classList.add('fade-in');
-
-    setTimeout(
-      () => {
-        this.activeStyle = this.activeStyle == Style.OUTDOOR ? Style.SATELLITE : Style.OUTDOOR;
-        this.syncIfActive(this.map1!, this.map2!);
-        this.syncIfActive(this.map2!, this.map1!);
-        this.setStyle(this.activeStyle);
-
-        this.fadeContainer!.classList.remove('fade-in');
-      },
-      this.doFade ? 300 : 0,
+    this.activeStyle.update((style) =>
+      style == MapStyle.OUTDOOR ? MapStyle.SATELLITE : MapStyle.OUTDOOR,
     );
+    this.syncIfActive(this.map1!, this.map2!);
+    this.syncIfActive(this.map2!, this.map1!);
+    this.setStyle(this.activeStyle());
   }
 
-  private setStyle(style: Style): void {
+  private setStyle(style: MapStyle): void {
     if (!this.map1Container || !this.map2Container) return;
-    this.map1Container.hidden = style == Style.SATELLITE;
-    this.map2Container.hidden = style == Style.OUTDOOR;
+    this.map1Container.hidden = style == MapStyle.SATELLITE;
+    this.map2Container.hidden = style == MapStyle.OUTDOOR;
   }
 
   private addTrailLayers(map: Map): void {
@@ -279,9 +274,9 @@ export class MapService {
   }
 
   toggleEditingRoute(): void {
-    this.isEditingRoute = !this.isEditingRoute;
+    this.isEditingRoute.update((bool) => !bool);
     // Change cursor while editing
-    this.setMapCursor(this.isEditingRoute ? 'crosshair' : 'grab');
+    this.setMapCursor(this.isEditingRoute() ? 'crosshair' : 'grab');
   }
 
   private setMapCursor(style: Property.Cursor) {

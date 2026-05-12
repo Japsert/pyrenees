@@ -1,7 +1,6 @@
 import {
   Feature,
   FeatureCollection,
-  GeoJsonProperties,
   LineString,
   MultiPoint,
   Position,
@@ -61,7 +60,7 @@ export class Track {
       this.net_ascend = p['net_ascend'];
       this.time = p['time'];
     } else if (track.type == 'FeatureCollection') {
-      const feature = (track as FeatureCollection).features[0];
+      const feature = track.features[0];
       const { coordinates } = feature.geometry as LineString;
       const p = feature.properties!;
       const times = p['times'] as number[];
@@ -123,7 +122,7 @@ export class Route {
     const [waypointsFeature, trackFeature] = featureCollection.features;
 
     const waypoints = (waypointsFeature.geometry as MultiPoint).coordinates.map(
-      (pos) => new Waypoint(pos as Position),
+      (pos) => new Waypoint(pos),
     );
     const track = new Track(trackFeature);
 

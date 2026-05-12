@@ -1,4 +1,4 @@
-export enum Style {
+export enum MapStyle {
   OUTDOOR,
   SATELLITE,
-};
+}
