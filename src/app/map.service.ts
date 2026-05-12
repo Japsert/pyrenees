@@ -75,6 +75,8 @@ export class MapService {
       this.map2 = this.createMap(container2, 'mapbox://styles/japsert-/cmog7wz6t000f01qwgqldfyeo');
       container2.hidden = true;
       this.map2.addControl(new NavigationControl({ visualizePitch: true }));
+      this.map2.addControl(new RouteControl(this.appRef, this.injector));
+      this.addRoutePlannerHandlers(this.map2);
 
       this.map2.once('load', () => {
         this.addTrailLayers(this.map2!);
