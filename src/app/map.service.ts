@@ -50,13 +50,11 @@ export class MapService {
   async initMaps(
     container1: HTMLElement,
     container2: HTMLElement,
-    fadeContainer: HTMLElement,
   ): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
 
     this.map1Container = container1;
     this.map2Container = container2;
-    this.fadeContainer = fadeContainer;
     this.setStyle(MapStyle.OUTDOOR);
 
     console.debug('Adding map 1...');
