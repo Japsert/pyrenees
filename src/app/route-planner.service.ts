@@ -1,8 +1,8 @@
-import { computed, inject, Injectable, signal, OnInit } from '@angular/core';
-import { FeatureCollection, Position } from 'geojson';
+import { computed, inject, Injectable, signal } from '@angular/core';
+import { FeatureCollection } from 'geojson';
 import { HttpClient } from '@angular/common/http';
-import { map, Subject, switchMap } from 'rxjs';
-import { Route, Track, Waypoint } from './route/route';
+import { map, mergeMap, Subject } from 'rxjs';
+import { Route, Segment } from './route/route';
 
 @Injectable({
   providedIn: 'root',
@@ -13,43 +13,51 @@ export class RoutePlannerService {
   private readonly future = signal<Route[]>([]);
   readonly canUndo = computed(() => this.history().length > 0);
   readonly canRedo = computed(() => this.future().length > 0);
-  private readonly apiCall = new Subject<Waypoint[]>();
+  private readonly apiCall = new Subject<Segment>();
 
   private readonly http = inject(HttpClient);
   private readonly BROUTER_API = 'https://brouter.de/brouter';
 
   constructor() {
-    // RxJS magic to cancel in-flight requests when user clicks rapidly
+    // Load route from local storage
+    this.loadRoute();
+
+    // RxJS magic to merge simultaneous requests when user clicks rapidly
     this.apiCall
       .pipe(
-        switchMap((waypoints) => {
+        mergeMap((segment) => {
+          const start = segment.start.position;
+          const end = segment.end.position;
           return this.http
             .get<FeatureCollection>(this.BROUTER_API, {
               params: {
-                lonlats: waypoints.map(({ position: [lon, lat] }) => `${lon},${lat}`).join('|'),
+                lonlats: `${start[0]},${start[1]}|${end[0]},${end[1]}`,
                 profile: 'shortest',
                 alternativeidx: 0,
                 format: 'geojson',
               },
             })
-            .pipe(map((track) => ({ waypoints, track })));
+            .pipe(map((fc) => ({ segment, fc })));
         }),
       )
-      .subscribe(({ waypoints, track }) => {
-        this.setRoute(new Route(waypoints, new Track(track)));
+      .subscribe(({ segment, fc }) => {
+        const routedSegment = Segment.fromFeatureCollection(segment.start, segment.end, fc);
+        this.route.update((route) => {
+          const copy = route.clone();
+          const idx = copy.segments.indexOf(segment);
+          if (idx != -1) copy.segments[idx] = routedSegment;
+          return copy;
+        });
+        this.saveRoute();
       });
-
-    // Load route from local storage
-    this.loadRoute();
   }
 
-  appendWaypoint(wp: Waypoint): void {
-    console.log('appendWaypoint called', wp);
+  newWaypoint(lng: number, lat: number): void {
     this.pushHistory();
     const next = this.route().clone();
-    next.waypoints.push(wp);
+    const segment = next.appendWaypoint(lng, lat);
     this.setRoute(next);
-    this.reroute();
+    if (segment) this.routeSegment(segment);
   }
 
   clear(): void {
@@ -63,7 +71,6 @@ export class RoutePlannerService {
     this.future.update((f) => [this.route(), ...f]);
     this.setRoute(h.at(-1)!);
     this.history.set(h.slice(0, -1));
-    this.reroute();
   }
 
   redo(): void {
@@ -72,7 +79,6 @@ export class RoutePlannerService {
     this.history.update((h) => [...h, this.route()]);
     this.setRoute(f[0]);
     this.future.set(f.slice(1));
-    this.reroute();
   }
 
   private pushHistory(): void {
@@ -80,11 +86,8 @@ export class RoutePlannerService {
     this.future.set([]);
   }
 
-  private reroute(): void {
-    const waypoints = this.route().waypoints;
-    if (waypoints.length < 2) return;
-
-    this.apiCall.next(waypoints);
+  private routeSegment(segment: Segment): void {
+    this.apiCall.next(segment);
   }
 
   private setRoute(route: Route): void {

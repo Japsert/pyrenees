@@ -2,27 +2,26 @@ import {
   Feature,
   FeatureCollection,
   LineString,
+  MultiLineString,
   MultiPoint,
   Position,
 } from 'geojson';
 
+type WaypointProperties = {
+  doesStartDay: boolean;
+  doesEndDay: boolean;
+};
+
 export class Waypoint {
   position: Position;
+  doesStartDay: boolean;
+  doesEndDay: boolean;
 
-  constructor(position: Position) {
+  constructor(position: Position, doesStartDay: boolean = false, doesEndDay: boolean = false) {
     this.position = position;
+    this.doesStartDay = doesStartDay;
+    this.doesEndDay = doesEndDay;
   }
-}
-
-function WaypointsToFeature(wps: Waypoint[]): Feature {
-  return {
-    type: 'Feature',
-    geometry: {
-      type: 'MultiPoint',
-      coordinates: wps.map((waypoint) => waypoint.position),
-    },
-    properties: {},
-  };
 }
 
 class Node {
@@ -37,95 +36,164 @@ class Node {
   }
 }
 
-export class Track {
-  track: Node[] = [];
-  length: number = 0;
-  total_ascend: number = 0;
-  net_ascend: number = 0;
-  time: number = 0;
+type SegmentProperties = {
+  trackElevation: number[];
+  trackTime: number[];
+} & SegmentInfo;
 
-  constructor(track?: Feature | FeatureCollection) {
-    if (!track) return;
+type SegmentInfo = {
+  length: number;
+  totalAscend: number;
+  netAscend: number;
+  time: number;
+};
 
-    if (track.type == 'Feature') {
-      const { coordinates } = track.geometry as LineString;
-      const p = track.properties!;
-      const elevations = p['elevations'] as number[];
-      const times = p['times'] as number[];
-      this.track = coordinates.map(
-        (pos, idx) => new Node([pos[0], pos[1]], elevations[idx], times[idx]),
-      );
-      this.length = p['length'];
-      this.total_ascend = p['total_ascend'];
-      this.net_ascend = p['net_ascend'];
-      this.time = p['time'];
-    } else if (track.type == 'FeatureCollection') {
-      const feature = track.features[0];
-      const { coordinates } = feature.geometry as LineString;
-      const p = feature.properties!;
-      const times = p['times'] as number[];
-      this.track = coordinates.map((pos, idx) => new Node([pos[0], pos[1]], pos[2], times[idx]));
-      this.length = p['track-length'];
-      this.total_ascend = p['filtered ascend'];
-      this.net_ascend = p['plain-ascend'];
-      this.time = p['total-time'];
-    }
+export class Segment {
+  start: Waypoint;
+  end: Waypoint;
+  track: Node[] | null = null;
+  info: SegmentInfo | null = null;
+
+  constructor(start: Waypoint, end: Waypoint) {
+    this.start = start;
+    this.end = end;
   }
 
-  toFeature(): Feature {
-    return {
-      type: 'Feature',
-      geometry: {
-        type: 'LineString',
-        coordinates: this.track.map((node) => node.position),
-      },
-      properties: {
-        elevations: this.track.map((node) => node.elevation),
-        times: this.track.map((node) => node.time),
-        length: this.length,
-        total_ascend: this.total_ascend,
-        net_ascend: this.net_ascend,
-        time: this.time,
-      },
+  static fromFeatures(
+    start: Waypoint,
+    end: Waypoint,
+    positions: Position[],
+    properties: SegmentProperties,
+  ): Segment {
+    const segment = new Segment(start, end);
+    segment.track = positions.map((pos, idx) => {
+      const elevation = properties.trackElevation.at(idx)!;
+      const time = properties.trackTime.at(idx)!;
+      return new Node(pos, elevation, time);
+    });
+    segment.info = {
+      length: properties.length,
+      totalAscend: properties.totalAscend,
+      netAscend: properties.netAscend,
+      time: properties.time,
     };
+    return segment;
+  }
+
+  static fromFeatureCollection(start: Waypoint, end: Waypoint, fc: FeatureCollection): Segment {
+    const segment = new Segment(start, end);
+
+    const feature = fc.features.at(0)!;
+    const { coordinates } = feature.geometry as LineString;
+    const p = feature.properties!;
+    const times = p['times'] as number[];
+    segment.track = coordinates.map((pos, idx) => new Node([pos[0], pos[1]], pos[2], times[idx]));
+    segment.info = {
+      length: p['track-length'],
+      totalAscend: p['filtered ascend'],
+      netAscend: p['plain-ascend'],
+      time: p['total-time'],
+    };
+
+    return segment;
   }
 }
 
 export class Route {
-  waypoints: Waypoint[];
-  track: Track;
+  initialWaypoint: Waypoint | null = null;
+  segments: Segment[] = [];
 
-  constructor(waypoints?: Waypoint[], track?: Track) {
-    this.waypoints = waypoints ?? [];
-    this.track = track ?? new Track();
-  }
+  appendWaypoint(lng: number, lat: number): Segment | null {
+    if (this.segments.length == 0 && !this.initialWaypoint) {
+      this.initialWaypoint = new Waypoint([lng, lat], true);
+      return null;
+    }
 
-  appendWaypoint(waypoint: Waypoint) {
-    this.waypoints.push(waypoint);
+    const start = this.initialWaypoint ?? this.segments.at(-1)!.end;
+    const end = new Waypoint([lng, lat]);
+    const segment = new Segment(start, end);
+    this.segments.push(segment);
+
+    this.initialWaypoint = null;
+
+    return segment;
   }
 
   clone(): Route {
     const copy = new Route();
-    copy.waypoints = [...this.waypoints];
-    copy.track = this.track;
+    copy.segments = [...this.segments];
     return copy;
   }
 
   toGeoJSON(): FeatureCollection {
     return {
       type: 'FeatureCollection',
-      features: [WaypointsToFeature(this.waypoints), this.track.toFeature()],
+      features: [this.waypointsToFeature(), this.tracksToFeature()],
+    };
+  }
+
+  private waypointsToFeature(): Feature {
+    const waypoints = this.segments.map((segment) => segment.start);
+    if (this.segments.length > 0) waypoints.push(this.segments.at(-1)!.end);
+    const waypointPositions: MultiPoint = {
+      type: 'MultiPoint',
+      coordinates: waypoints.map((wp) => wp.position),
+    };
+    const waypointPropertiesList: WaypointProperties[] = waypoints.map((waypoint) => ({
+      doesStartDay: waypoint.doesStartDay,
+      doesEndDay: waypoint.doesEndDay,
+    }));
+    return {
+      type: 'Feature',
+      geometry: waypointPositions,
+      properties: waypointPropertiesList,
+    };
+  }
+
+  private tracksToFeature(): Feature {
+    const routedSegments = this.segments.filter(
+      (s): s is Segment & { track: Node[]; info: SegmentInfo } =>
+        s.track !== null && s.info !== null,
+    );
+    const trackPositions: MultiLineString = {
+      type: 'MultiLineString',
+      coordinates: routedSegments.map((segment) => segment.track.map((node) => node.position)),
+    };
+    const segmentPropertiesList: SegmentProperties[] = routedSegments.map((segment) => ({
+      trackElevation: segment.track.map((node) => node.elevation),
+      trackTime: segment.track.map((node) => node.time),
+      length: segment.info.length,
+      totalAscend: segment.info.totalAscend,
+      netAscend: segment.info.netAscend,
+      time: segment.info.time,
+    }));
+    return {
+      type: 'Feature',
+      geometry: trackPositions,
+      properties: segmentPropertiesList,
     };
   }
 
   static fromGeoJSON(featureCollection: FeatureCollection): Route {
-    const [waypointsFeature, trackFeature] = featureCollection.features;
+    const route = new Route();
+    const [waypointsFeature, tracksFeature] = featureCollection.features;
+    const waypoints = (waypointsFeature.geometry as MultiPoint).coordinates;
+    const positionsList = (tracksFeature.geometry as MultiLineString).coordinates;
+    const waypointPropertiesList = waypointsFeature.properties as WaypointProperties[];
 
-    const waypoints = (waypointsFeature.geometry as MultiPoint).coordinates.map(
-      (pos) => new Waypoint(pos),
-    );
-    const track = new Track(trackFeature);
+    route.segments = positionsList.map((positions, idx) => {
+      const startProps = waypointPropertiesList.at(idx)!;
+      const endProps = waypointPropertiesList.at(idx + 1)!;
+      const start = new Waypoint(
+        waypoints.at(idx)!,
+        startProps.doesStartDay,
+        startProps.doesEndDay,
+      );
+      const end = new Waypoint(waypoints.at(idx + 1)!, endProps.doesStartDay, endProps.doesEndDay);
+      const properties = (tracksFeature.properties as SegmentProperties[]).at(idx)!;
+      return Segment.fromFeatures(start, end, positions, properties);
+    });
 
-    return new Route(waypoints, track);
+    return route;
   }
 }
