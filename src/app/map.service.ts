@@ -9,12 +9,13 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../environments/environment';
-import { GeoJSONSource, Map, NavigationControl, Popup } from 'mapbox-gl';
+import { GeoJSONSource, LngLat, Map, NavigationControl, Popup } from 'mapbox-gl';
 import { MapStyle } from './style.enum';
 import { RouteControl } from './map/route-control/route-control';
 import { RoutePlannerService } from './route-planner.service';
-import { Route, Waypoint } from './route/route';
+import { Route, Segment, SegmentProperties } from './route/route';
 import { Property } from 'csstype';
+import { Position } from 'geojson';
 
 @Injectable({
   providedIn: 'root',
@@ -27,10 +28,10 @@ export class MapService {
   private readonly routePlannerService = inject(RoutePlannerService);
   private map1Container: HTMLElement | null = null;
   private map2Container: HTMLElement | null = null;
-  private fadeContainer: HTMLElement | null = null;
   private map1: Map | null = null;
   private map2: Map | null = null;
-  private readonly doFade: boolean = false;
+  private isEditingSegment: boolean = false;
+  private editingSegment: Segment | null = null;
 
   private readonly appRef = inject(ApplicationRef);
   private readonly injector = inject(EnvironmentInjector);
@@ -47,17 +48,13 @@ export class MapService {
     map.getSource<GeoJSONSource>('route')?.setData(route.toGeoJSON());
   }
 
-  async initMaps(
-    container1: HTMLElement,
-    container2: HTMLElement,
-  ): Promise<void> {
+  async initMaps(container1: HTMLElement, container2: HTMLElement): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
 
     this.map1Container = container1;
     this.map2Container = container2;
     this.setStyle(MapStyle.OUTDOOR);
 
-    console.debug('Adding map 1...');
     this.map1 = this.createMap(container1, 'mapbox://styles/japsert-/cmotu1b3x007o01s67wvi4hiv');
     this.map1.addControl(new NavigationControl({ visualizePitch: true }));
     this.map1.addControl(new RouteControl(this.appRef, this.injector));
@@ -68,9 +65,7 @@ export class MapService {
       //this.addShelterLayer(this.map1!);
       this.addRouteLayer(this.map1!);
       this.updateRouteData(this.map1!, this.routePlannerService.route());
-      console.debug('Map 1 done!');
 
-      console.debug('Adding map 2...');
       container2.hidden = false;
       this.map2 = this.createMap(container2, 'mapbox://styles/japsert-/cmog7wz6t000f01qwgqldfyeo');
       container2.hidden = true;
@@ -83,7 +78,6 @@ export class MapService {
         //this.addShelterLayer(this.map2!);
         this.addRouteLayer(this.map2!);
         this.updateRouteData(this.map2!, this.routePlannerService.route());
-        console.debug('Map 2 done!');
       });
     });
   }
@@ -239,20 +233,91 @@ export class MapService {
           'circle-stroke-width': 2,
         },
       })
+      // TODO: move to separate function. wtf is this one becoming
+      .addSource('segment-editing-lines', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [],
+        },
+      })
+      .addLayer({
+        id: 'segment-editing-lines',
+        type: 'line',
+        source: 'segment-editing-lines',
+        paint: {
+          'line-color': '#ff00ff',
+          'line-width': 3,
+        },
+      })
       .on('mouseenter', 'route-line', () => {
         map.setPaintProperty('route-line', 'line-width', 6);
         this.setMapCursor('grab');
       })
-      .on('mouseleave', 'route-line', () => map.setPaintProperty('route-line', 'line-width', 3));
+      .on('mousedown', 'route-line', (e) => {
+        console.debug('starting to edit segment');
+        e.preventDefault();
+        this.isEditingSegment = true;
+        const segmentIdx = (e.features!.at(0)!.properties! as SegmentProperties).idx;
+        this.editingSegment = this.routePlannerService.route().segments.at(segmentIdx)!;
+        this.updateEditingSegment(map, e.lngLat);
+      })
+      .on('mousemove', (e) => {
+        if (!this.isEditingSegment) return;
+        console.debug('mouse moved while editing segment');
+        this.updateEditingSegment(map, e.lngLat);
+      })
+      .on('mouseup', (e) => {
+        if (!this.isEditingSegment) return;
+        console.debug('finishing editing segment');
+        this.finishEditingSegment(map, e.lngLat);
+        this.isEditingSegment = false;
+        this.editingSegment = null;
+        map.setPaintProperty('route-line', 'line-width', 3);
+      })
+      .on('mouseleave', 'route-line', () => {
+        if (!this.isEditingSegment) map.setPaintProperty('route-line', 'line-width', 3);
+      });
   }
 
-  private addRoutePlannerHandlers(map: Map) {
+  private updateEditingSegment(map: Map, newPos: LngLat): void {
+    const source = map.getSource('segment-editing-lines') as GeoJSONSource | undefined;
+
+    if (!source) return console.error("segment editing lines' source not found");
+    if (!this.editingSegment) return console.error('this.editingSegment is null, somehow');
+
+    source.setData({
+      type: 'LineString',
+      coordinates: [
+        this.editingSegment.start.position,
+        [newPos.lng, newPos.lat],
+        this.editingSegment.end.position,
+      ],
+    });
+  }
+
+  private finishEditingSegment(map: Map, lngLat: LngLat): void {
+    const source = map.getSource('segment-editing-lines') as GeoJSONSource | undefined;
+
+    if (!source) return console.error("segment editing lines' source not found");
+    if (!this.editingSegment) return console.error('this.editingSegment is null, somehow');
+
+    const newPos: Position = [lngLat.lng, lngLat.lat];
+    this.routePlannerService.splitSegment(this.editingSegment, newPos);
+
+    source.setData({
+      type: 'FeatureCollection',
+      features: [],
+    });
+  }
+
+  private addRoutePlannerHandlers(map: Map): void {
     map.on('click', (e) => {
       console.debug(`Clicked at ${e.lngLat}`);
       if (!this.isEditingRoute) return;
 
       const { lng, lat } = e.lngLat;
-      this.routePlannerService.appendWaypoint(new Waypoint([lng, lat]));
+      this.routePlannerService.newWaypoint(lng, lat);
     });
   }
 
