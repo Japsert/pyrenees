@@ -1,8 +1,9 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { FeatureCollection } from 'geojson';
+import { FeatureCollection, Position } from 'geojson';
 import { HttpClient } from '@angular/common/http';
 import { map, mergeMap, Subject } from 'rxjs';
-import { Route, Segment } from './route/route';
+import { Route, Segment, Waypoint } from './route/route';
+import { LngLat } from 'mapbox-gl';
 
 @Injectable({
   providedIn: 'root',
@@ -41,13 +42,8 @@ export class RoutePlannerService {
         }),
       )
       .subscribe(({ segment, fc }) => {
-        const routedSegment = Segment.fromFeatureCollection(segment.start, segment.end, fc);
-        this.route.update((route) => {
-          const copy = route.clone();
-          const idx = copy.segments.indexOf(segment);
-          if (idx != -1) copy.segments[idx] = routedSegment;
-          return copy;
-        });
+        segment.updateFromFeatureCollection(fc);
+        this.route.update((route) => route.clone());
         this.saveRoute();
       });
   }
@@ -58,6 +54,15 @@ export class RoutePlannerService {
     const segment = next.appendWaypoint(lng, lat);
     this.setRoute(next);
     if (segment) this.routeSegment(segment);
+  }
+
+  splitSegment(segment: Segment, newPos: Position): void {
+    this.pushHistory();
+    const next = this.route().clone();
+    const { seg1, seg2 } = next.splitSegment(segment, newPos);
+    this.setRoute(next);
+    this.routeSegment(seg1);
+    this.routeSegment(seg2);
   }
 
   clear(): void {
@@ -100,7 +105,7 @@ export class RoutePlannerService {
     localStorage.setItem('route', JSON.stringify(fc));
   }
 
-  private loadRoute() {
+  private loadRoute(): void {
     const savedRoute = localStorage.getItem('route');
     if (savedRoute == null) return;
 

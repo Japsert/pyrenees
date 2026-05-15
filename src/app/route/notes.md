@@ -22,12 +22,12 @@ GeoJSON:
     - properties:
       - startsDay: bool
       - endsDay: bool
-  - Track Feature
-    - geometry: MultiLineString
-      - coordinates: Position[][]
-    - properties:
-      - SegmentProperties[], one per Position[]
-        - SegmentProperties:
+  - Track Features
+    - Feature:
+      - geometry: LineString
+        - coordinates: Position[]
+      - properties:
+        - SegmentProperties
 
 GeoJSON -> model:
 - create segments from waypoint and track features one by one
