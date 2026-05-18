@@ -13,14 +13,16 @@ import {
   GeoJSONSource,
   LngLat,
   Map as MapboxMap,
+  MapMouseEvent,
   NavigationControl,
+  Point,
   Popup,
   ScaleControl,
 } from 'mapbox-gl';
 import { MapStyle } from './style.enum';
 import { RouteControl } from './map/route-control/route-control';
 import { RoutePlannerService } from './route-planner.service';
-import { Route, Segment, SegmentProperties, WaypointProperties } from './route/route';
+import { Route, Segment, SegmentProperties, Waypoint, WaypointProperties } from './route/route';
 import { Property } from 'csstype';
 import { Position } from 'geojson';
 import { ease } from './math';
@@ -40,6 +42,8 @@ export class MapService {
   private map2: MapboxMap | null = null;
   private isEditingSegment: boolean = false;
   private editingSegment: Segment | null = null;
+  private isEditingWaypoint: boolean = false;
+  private editingWaypointIdx: number | null = null;
   private hoveredWaypointId: number | null = null;
   private readonly hoverProgress = new Map<number, number>();
   private readonly deleteProgress = new Map<number, number>();
@@ -305,7 +309,7 @@ export class MapService {
 
   private addSegmentEditingLayer(map: MapboxMap): void {
     map
-      .addSource('segment-editing-lines', {
+      .addSource('editing-lines', {
         type: 'geojson',
         data: {
           type: 'FeatureCollection',
@@ -313,9 +317,9 @@ export class MapService {
         },
       })
       .addLayer({
-        id: 'segment-editing-lines',
+        id: 'editing-lines',
         type: 'line',
-        source: 'segment-editing-lines',
+        source: 'editing-lines',
         paint: {
           'line-color': '#ff00ff',
           'line-width': 3,
@@ -325,9 +329,9 @@ export class MapService {
   }
 
   private updateEditingSegment(map: MapboxMap, newPos: LngLat): void {
-    const source = map.getSource('segment-editing-lines') as GeoJSONSource | undefined;
+    const source = map.getSource('editing-lines') as GeoJSONSource | undefined;
 
-    if (!source) return console.error("segment editing lines' source not found");
+    if (!source) return console.error("editing lines' source not found");
     if (!this.editingSegment) return console.error('this.editingSegment is null, somehow');
 
     source.setData({
@@ -341,9 +345,9 @@ export class MapService {
   }
 
   private finishEditingSegment(map: MapboxMap, lngLat: LngLat): void {
-    const source = map.getSource('segment-editing-lines') as GeoJSONSource | undefined;
+    const source = map.getSource('editing-lines') as GeoJSONSource | undefined;
 
-    if (!source) return console.error("segment editing lines' source not found");
+    if (!source) return console.error("editing lines' source not found");
     if (!this.editingSegment) return console.error('this.editingSegment is null, somehow');
 
     const newPos: Position = [lngLat.lng, lngLat.lat];
@@ -358,10 +362,72 @@ export class MapService {
   }
 
   private cancelEditingSegment(map: MapboxMap): void {
-    const source = map.getSource('segment-editing-lines') as GeoJSONSource | undefined;
-    if (!source) return console.error("segment editing lines' source not found");
+    const source = map.getSource('editing-lines') as GeoJSONSource | undefined;
+    if (!source) return console.error("editing lines' source not found");
     this.isEditingSegment = false;
     this.editingSegment = null;
+    source.setData({
+      type: 'FeatureCollection',
+      features: [],
+    });
+  }
+
+  private updateEditingWaypoint(map: MapboxMap, newPos: LngLat): void {
+    const source = map.getSource('editing-lines') as GeoJSONSource | undefined;
+
+    if (!source) return console.error("editing lines' source not found");
+    if (this.editingWaypointIdx == null)
+      return console.error('this.editingWaypointIdx is null, somehow');
+
+    const prevSegment = this.routePlannerService.findSegment(
+      (segment) => segment.end.idx == this.editingWaypointIdx,
+    );
+    const nextSegment = this.routePlannerService.findSegment(
+      (segment) => segment.start.idx == this.editingWaypointIdx,
+    );
+    const coordinates = [];
+    if (prevSegment) coordinates.push(prevSegment.start.position);
+    coordinates.push([newPos.lng, newPos.lat]);
+    if (nextSegment) coordinates.push(nextSegment.end.position);
+    source.setData({
+      type: 'LineString',
+      coordinates: coordinates,
+    });
+  }
+
+  private finishEditingWaypoint(map: MapboxMap, lngLat: LngLat, point: Point): void {
+    const source = map.getSource('editing-lines') as GeoJSONSource | undefined;
+
+    if (!source) return console.error("editing lines' source not found");
+    if (this.editingWaypointIdx == null)
+      return console.error('this.editingWaypointIdx is null, somehow');
+
+    const newPos: Position = [lngLat.lng, lngLat.lat];
+    this.routePlannerService.moveWaypoint(this.editingWaypointIdx, newPos);
+
+    this.isEditingWaypoint = false;
+    this.editingWaypointIdx = null;
+    source.setData({
+      type: 'FeatureCollection',
+      features: [],
+    });
+
+    // Re-evaluate hover at current mouse position
+    map.once('render', () => {
+      console.debug('re-evaluating hover');
+      const features = map.queryRenderedFeatures(point, { layers: ['waypoints'] });
+      if (features.length == 0) return;
+      console.debug('feature found');
+      const id = features.at(0)!.id as number;
+      this.mouseEnterWaypoints(map, id);
+    });
+  }
+
+  private cancelEditingWaypoint(map: MapboxMap): void {
+    const source = map.getSource('editing-lines') as GeoJSONSource | undefined;
+    if (!source) return console.error("editing lines' source not found");
+    this.isEditingWaypoint = false;
+    this.editingWaypointIdx = null;
     source.setData({
       type: 'FeatureCollection',
       features: [],
@@ -373,10 +439,10 @@ export class MapService {
       // Adding waypoints
       .on('click', (e) => {
         if (!this.isEditingRoute()) return;
-        const { lng, lat } = e.lngLat;
-        this.routePlannerService.newWaypoint(lng, lat);
+        const newPos: Position = [e.lngLat.lng, e.lngLat.lat];
+        this.routePlannerService.newWaypoint(newPos);
       })
-      // Segment editing
+      // Segment and waypoint editing
       .on('mouseenter', 'route-line', () => {
         this.isOverLine = true;
         this.updateLineHover(map);
@@ -389,32 +455,22 @@ export class MapService {
         this.updateEditingSegment(map, e.lngLat);
       })
       .on('mousemove', (e) => {
-        if (!this.isEditingSegment) return;
-        this.updateEditingSegment(map, e.lngLat);
+        if (this.isEditingSegment) this.updateEditingSegment(map, e.lngLat);
+        if (this.isEditingWaypoint) this.updateEditingWaypoint(map, e.lngLat);
       })
       .on('mouseup', (e) => {
-        if (!this.isEditingSegment) return;
-        this.finishEditingSegment(map, e.lngLat);
+        if (this.isEditingSegment) this.finishEditingSegment(map, e.lngLat);
+        if (this.isEditingWaypoint) this.finishEditingWaypoint(map, e.lngLat, e.point);
         this.updateLineHover(map);
       })
       .on('mouseleave', 'route-line', () => {
         this.isOverLine = false;
         if (!this.isEditingSegment) this.updateLineHover(map);
       })
-      // Waypoint editing
       .on('mouseenter', 'waypoints', (e) => {
-        this.isOverWaypoint = true;
-        this.updateLineHover(map);
-
         const id = e.features!.at(0)!.id as number;
         if (id == undefined) return;
-        this.hoveredWaypointId = id;
-
-        if (!this.hoverProgress.has(id)) this.hoverProgress.set(id, 0);
-        if (!this.deleteProgress.has(id)) this.deleteProgress.set(id, 0);
-
-        this.animateHover(map, this.hoveredWaypointId, true);
-        if (this.isShiftHeld) this.animateDelete(map, id, true);
+        this.mouseEnterWaypoints(map, id);
       })
       .on('mouseleave', 'waypoints', () => {
         this.isOverWaypoint = false;
@@ -427,11 +483,17 @@ export class MapService {
       })
       .on('mousedown', 'waypoints', (e) => {
         e.preventDefault();
-        if (this.hoveredWaypointId == null || !this.isShiftHeld) return;
+        if (this.hoveredWaypointId == null) return;
         const waypointIdx = (e.features!.at(0)!.properties! as WaypointProperties).idx;
-        this.routePlannerService.deleteWaypoint(waypointIdx);
-        this.isOverWaypoint = false;
-        this.hoveredWaypointId = null;
+        if (this.isShiftHeld) {
+          this.routePlannerService.deleteWaypoint(waypointIdx);
+          this.isOverWaypoint = false;
+          this.hoveredWaypointId = null;
+        } else {
+          this.isEditingWaypoint = true;
+          this.editingWaypointIdx = waypointIdx;
+          this.updateEditingWaypoint(map, e.lngLat);
+        }
       });
 
     globalThis.addEventListener('keydown', (e) => {
@@ -441,6 +503,7 @@ export class MapService {
         this.animateDelete(map, this.hoveredWaypointId, true);
       } else if (e.key == 'Escape') {
         this.cancelEditingSegment(map);
+        this.cancelEditingWaypoint(map);
       }
     });
     globalThis.addEventListener('keyup', (e) => {
@@ -449,6 +512,19 @@ export class MapService {
       if (this.hoveredWaypointId == null) return;
       this.animateDelete(map, this.hoveredWaypointId, false);
     });
+  }
+
+  private mouseEnterWaypoints(map: MapboxMap, id: number): void {
+    this.isOverWaypoint = true;
+    this.updateLineHover(map);
+
+    this.hoveredWaypointId = id;
+
+    if (!this.hoverProgress.has(id)) this.hoverProgress.set(id, 0);
+    if (!this.deleteProgress.has(id)) this.deleteProgress.set(id, 0);
+
+    this.animateHover(map, this.hoveredWaypointId, true);
+    if (this.isShiftHeld) this.animateDelete(map, id, true);
   }
 
   private updateLineHover(map: MapboxMap): void {
