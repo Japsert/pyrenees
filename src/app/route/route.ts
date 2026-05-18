@@ -68,7 +68,13 @@ export class Segment {
   track: readonly Node[] | null = null;
   info: SegmentInfo | null = null;
 
-  constructor(idx: number, start: Waypoint, end: Waypoint, track?: readonly Node[], info?: SegmentInfo) {
+  constructor(
+    idx: number,
+    start: Waypoint,
+    end: Waypoint,
+    track?: readonly Node[],
+    info?: SegmentInfo,
+  ) {
     this.idx = idx;
     this.start = start;
     this.end = end;
@@ -102,6 +108,7 @@ export class Segment {
     const { coordinates } = feature.geometry;
     const p = feature.properties;
     const times = p['times'];
+    if (!times) debugger;
     this.track = coordinates.map((pos, idx) => new Node([pos[0], pos[1]], pos[2], times[idx]));
     this.info = {
       length: p['track-length'],
@@ -138,14 +145,21 @@ export class Route {
   initialWaypoint: Waypoint | null = null;
   segments: Segment[] = [];
 
-  appendWaypoint(lng: number, lat: number): Segment | null {
+  clone(): Route {
+    const copy = new Route();
+    copy.initialWaypoint = this.initialWaypoint;
+    copy.segments = [...this.segments];
+    return copy;
+  }
+
+  appendWaypoint(position: Position): Segment | null {
     if (this.segments.length == 0 && !this.initialWaypoint) {
-      this.initialWaypoint = new Waypoint(0, [lng, lat], true, false);
+      this.initialWaypoint = new Waypoint(0, position, true, false);
       return null;
     }
 
     const start = this.initialWaypoint ?? this.segments.at(-1)!.end;
-    const end = new Waypoint(start.idx + 1, [lng, lat]);
+    const end = new Waypoint(start.idx + 1, position);
     const idx = this.segments.length;
     const segment = new Segment(idx, start, end);
     this.segments.push(segment);
@@ -155,66 +169,36 @@ export class Route {
     return segment;
   }
 
-  clone(): Route {
-    const copy = new Route();
-    copy.initialWaypoint = this.initialWaypoint;
-    copy.segments = [...this.segments];
-    return copy;
-  }
+  moveWaypoint(
+    idx: number,
+    newPos: Position,
+  ): { prevSegment: Segment; nextSegment: Segment } | void {
+    if (this.initialWaypoint) {
+      const old = this.initialWaypoint;
+      if (old.idx != idx)
+        return console.error(
+          `Tried moving waypoint (idx ${idx}), but there is only an initial waypoint with index ${old.idx}!`,
+        );
+      this.initialWaypoint = new Waypoint(old.idx, newPos, old.doesStartDay, old.doesEndDay);
+      return;
+    }
 
-  private static decrementIndices(segments: Segment[], startIdx: number): Segment[] {
-    return Route.updateIndices(segments, startIdx, (idx) => idx - 1);
-  }
+    // Update adjoining segments if they exist (no sanity check)
+    const prevSegmentIdx = this.segments.findIndex((segment) => segment.end.idx == idx);
+    const prevSegment = this.segments.at(prevSegmentIdx)!;
+    const end = prevSegment.end;
+    const newPrevEnd = new Waypoint(end.idx, newPos, end.doesStartDay, end.doesEndDay);
+    const newPrevSegment = new Segment(prevSegment.idx, prevSegment.start, newPrevEnd);
+    if (prevSegmentIdx != -1) this.segments.splice(prevSegmentIdx, 1, newPrevSegment);
 
-  private static incrementIndices(segments: Segment[], startIdx: number): Segment[] {
-    return Route.updateIndices(segments, startIdx, (idx) => idx + 1);
-  }
+    const nextSegmentIdx = this.segments.findIndex((segment) => segment.start.idx == idx);
+    const nextSegment = this.segments.at(nextSegmentIdx)!;
+    const start = nextSegment.start;
+    const newNextStart = new Waypoint(start.idx, newPos, start.doesStartDay, start.doesEndDay);
+    const newNextSegment = new Segment(nextSegment.idx, newNextStart, nextSegment.end);
+    if (nextSegmentIdx != -1) this.segments.splice(nextSegmentIdx, 1, newNextSegment);
 
-  private static updateIndices(
-    segments: Segment[],
-    startIdx: number,
-    func: (idx: number) => number,
-  ) {
-    return segments.map((segment, idx) =>
-      idx < startIdx
-        ? segment
-        : new Segment(
-            func(segment.idx),
-            new Waypoint(
-              func(segment.start.idx),
-              segment.start.position,
-              segment.start.doesStartDay,
-              segment.start.doesEndDay,
-            ),
-            new Waypoint(
-              func(segment.end.idx),
-              segment.end.position,
-              segment.end.doesStartDay,
-              segment.end.doesEndDay,
-            ),
-            segment.track ?? undefined,
-            segment.info ?? undefined,
-          ),
-    );
-  }
-
-  splitSegment(segment: Segment, newPos: Position): { seg1: Segment; seg2: Segment } {
-    const idx1 = segment.idx;
-    const idx2 = idx1 + 1;
-
-    const start = segment.start;
-    const end = segment.end;
-
-    const start1 = new Waypoint(start.idx, start.position, start.doesStartDay, start.doesEndDay);
-    const end1 = new Waypoint(idx2, newPos, false, false);
-    const start2 = new Waypoint(idx2, newPos, false, false);
-    const end2 = new Waypoint(end.idx + 1, end.position, end.doesStartDay, end.doesEndDay);
-    const seg1 = new Segment(idx1, start1, end1);
-    const seg2 = new Segment(idx2, start2, end2);
-
-    this.segments.splice(idx1, 1, seg1, seg2);
-    this.segments = Route.incrementIndices(this.segments, idx2 + 1);
-    return { seg1, seg2 };
+    return { prevSegment: newPrevSegment, nextSegment: newNextSegment };
   }
 
   deleteWaypoint(idx: number): Segment | void {
@@ -256,7 +240,7 @@ export class Route {
     return this.mergeSegments(prevSegment, nextSegment);
   }
 
-  deleteSegment(segment: Segment): void {
+  private deleteSegment(segment: Segment): void {
     const idx = this.segments.indexOf(segment);
 
     if (idx == -1)
@@ -271,7 +255,7 @@ export class Route {
     this.segments = Route.decrementIndices(this.segments, idx);
   }
 
-  mergeSegments(segment1: Segment, segment2: Segment): Segment {
+  private mergeSegments(segment1: Segment, segment2: Segment): Segment {
     const idx1 = this.segments.indexOf(segment1);
     const idx2 = this.segments.indexOf(segment2);
 
@@ -288,6 +272,61 @@ export class Route {
     this.segments = Route.decrementIndices(this.segments, idx2);
 
     return merged;
+  }
+
+  splitSegment(segment: Segment, newPos: Position): { prevSegment: Segment; nextSegment: Segment } {
+    const idx1 = segment.idx;
+    const idx2 = idx1 + 1;
+
+    const start = segment.start;
+    const end = segment.end;
+
+    const prevStart = new Waypoint(start.idx, start.position, start.doesStartDay, start.doesEndDay);
+    const prevEnd = new Waypoint(idx2, newPos, false, false);
+    const nextStart = new Waypoint(idx2, newPos, false, false);
+    const nextEnd = new Waypoint(end.idx + 1, end.position, end.doesStartDay, end.doesEndDay);
+    const prevSegment = new Segment(idx1, prevStart, prevEnd);
+    const nextSegment = new Segment(idx2, nextStart, nextEnd);
+
+    this.segments.splice(idx1, 1, prevSegment, nextSegment);
+    this.segments = Route.incrementIndices(this.segments, idx2 + 1);
+    return { prevSegment, nextSegment };
+  }
+
+  private static decrementIndices(segments: Segment[], startIdx: number): Segment[] {
+    return Route.updateIndices(segments, startIdx, (idx) => idx - 1);
+  }
+
+  private static incrementIndices(segments: Segment[], startIdx: number): Segment[] {
+    return Route.updateIndices(segments, startIdx, (idx) => idx + 1);
+  }
+
+  private static updateIndices(
+    segments: Segment[],
+    startIdx: number,
+    func: (idx: number) => number,
+  ) {
+    return segments.map((segment, idx) =>
+      idx < startIdx
+        ? segment
+        : new Segment(
+            func(segment.idx),
+            new Waypoint(
+              func(segment.start.idx),
+              segment.start.position,
+              segment.start.doesStartDay,
+              segment.start.doesEndDay,
+            ),
+            new Waypoint(
+              func(segment.end.idx),
+              segment.end.position,
+              segment.end.doesStartDay,
+              segment.end.doesEndDay,
+            ),
+            segment.track ?? undefined,
+            segment.info ?? undefined,
+          ),
+    );
   }
 
   toGeoJSON(): RouteFeatureCollection {

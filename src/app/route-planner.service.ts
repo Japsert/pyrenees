@@ -1,5 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { FeatureCollection, Position } from 'geojson';
+import { Position } from 'geojson';
 import { HttpClient } from '@angular/common/http';
 import { map, mergeMap, Subject } from 'rxjs';
 import {
@@ -57,29 +57,43 @@ export class RoutePlannerService {
       });
   }
 
-  newWaypoint(lng: number, lat: number): void {
+  private updateRoute<T>(func: (route: Route) => T): T {
     this.pushHistory();
     const next = this.route().clone();
-    const segment = next.appendWaypoint(lng, lat);
+    const ret = func(next);
     this.setRoute(next);
+    return ret;
+  }
+
+  newWaypoint(position: Position): void {
+    const segment = this.updateRoute((route) => route.appendWaypoint(position));
     if (segment) this.routeSegment(segment);
   }
 
-  splitSegment(segment: Segment, newPos: Position): void {
-    this.pushHistory();
-    const next = this.route().clone();
-    const { seg1, seg2 } = next.splitSegment(segment, newPos);
-    this.setRoute(next);
-    this.routeSegment(seg1);
-    this.routeSegment(seg2);
+  moveWaypoint(idx: number, newPos: Position): void {
+    const newSegments = this.updateRoute((route) => route.moveWaypoint(idx, newPos));
+    if (newSegments) {
+      const { prevSegment, nextSegment } = newSegments;
+      this.routeSegment(prevSegment);
+      this.routeSegment(nextSegment);
+    }
   }
 
   deleteWaypoint(idx: number): void {
-    this.pushHistory();
-    const next = this.route().clone();
-    const maybeSegment = next.deleteWaypoint(idx);
-    this.setRoute(next);
+    const maybeSegment = this.updateRoute((route) => route.deleteWaypoint(idx));
     if (maybeSegment) this.routeSegment(maybeSegment);
+  }
+
+  splitSegment(segment: Segment, newPos: Position): void {
+    const { prevSegment, nextSegment } = this.updateRoute((route) =>
+      route.splitSegment(segment, newPos),
+    );
+    this.routeSegment(prevSegment);
+    this.routeSegment(nextSegment);
+  }
+
+  findSegment(func: (segment: Segment) => boolean): Segment | undefined {
+    return this.route().segments.find(func);
   }
 
   clear(): void {
