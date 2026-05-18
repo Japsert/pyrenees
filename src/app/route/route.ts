@@ -108,7 +108,7 @@ export class Segment {
     const { coordinates } = feature.geometry;
     const p = feature.properties;
     const times = p['times'];
-    if (!times) debugger;
+    //if (!times) debugger;
     this.track = coordinates.map((pos, idx) => new Node([pos[0], pos[1]], pos[2], times[idx]));
     this.info = {
       length: p['track-length'],
