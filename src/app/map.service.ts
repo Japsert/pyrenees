@@ -9,13 +9,21 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../environments/environment';
-import { GeoJSONSource, LngLat, Map, NavigationControl, Popup } from 'mapbox-gl';
+import {
+  GeoJSONSource,
+  LngLat,
+  Map as MapboxMap,
+  NavigationControl,
+  Popup,
+  ScaleControl,
+} from 'mapbox-gl';
 import { MapStyle } from './style.enum';
 import { RouteControl } from './map/route-control/route-control';
 import { RoutePlannerService } from './route-planner.service';
-import { Route, Segment, SegmentProperties } from './route/route';
+import { Route, Segment, SegmentProperties, WaypointProperties } from './route/route';
 import { Property } from 'csstype';
 import { Position } from 'geojson';
+import { ease } from './math';
 
 @Injectable({
   providedIn: 'root',
@@ -28,23 +36,31 @@ export class MapService {
   private readonly routePlannerService = inject(RoutePlannerService);
   private map1Container: HTMLElement | null = null;
   private map2Container: HTMLElement | null = null;
-  private map1: Map | null = null;
-  private map2: Map | null = null;
+  private map1: MapboxMap | null = null;
+  private map2: MapboxMap | null = null;
   private isEditingSegment: boolean = false;
   private editingSegment: Segment | null = null;
+  private hoveredWaypointId: number | null = null;
+  private readonly hoverProgress = new Map<number, number>();
+  private readonly deleteProgress = new Map<number, number>();
+  private isOverLine: boolean = false;
+  private isOverWaypoint: boolean = false;
+  private isShiftHeld: boolean = false;
 
   private readonly appRef = inject(ApplicationRef);
   private readonly injector = inject(EnvironmentInjector);
 
   constructor() {
     effect(() => {
+      // Call updateRouteData when route changes
       const route = this.routePlannerService.route();
       if (this.map1) this.updateRouteData(this.map1, route);
       if (this.map2) this.updateRouteData(this.map2, route);
     });
   }
 
-  updateRouteData(map: Map, route: Route): void {
+  updateRouteData(map: MapboxMap, route: Route): void {
+    this.clearHoverState(map);
     map.getSource<GeoJSONSource>('route')?.setData(route.toGeoJSON());
   }
 
@@ -58,12 +74,14 @@ export class MapService {
     this.map1 = this.createMap(container1, 'mapbox://styles/japsert-/cmotu1b3x007o01s67wvi4hiv');
     this.map1.addControl(new NavigationControl({ visualizePitch: true }));
     this.map1.addControl(new RouteControl(this.appRef, this.injector));
+    this.map1.addControl(new ScaleControl(), 'bottom-right');
     this.addRoutePlannerHandlers(this.map1);
 
     this.map1.once('load', () => {
       this.addTrailLayers(this.map1!);
       //this.addShelterLayer(this.map1!);
       this.addRouteLayer(this.map1!);
+      this.addSegmentEditingLayer(this.map1!);
       this.updateRouteData(this.map1!, this.routePlannerService.route());
 
       container2.hidden = false;
@@ -71,12 +89,14 @@ export class MapService {
       container2.hidden = true;
       this.map2.addControl(new NavigationControl({ visualizePitch: true }));
       this.map2.addControl(new RouteControl(this.appRef, this.injector));
+      this.map2.addControl(new ScaleControl(), 'bottom-right');
       this.addRoutePlannerHandlers(this.map2);
 
       this.map2.once('load', () => {
         this.addTrailLayers(this.map2!);
         //this.addShelterLayer(this.map2!);
         this.addRouteLayer(this.map2!);
+        this.addSegmentEditingLayer(this.map2!);
         this.updateRouteData(this.map2!, this.routePlannerService.route());
       });
     });
@@ -93,8 +113,8 @@ export class MapService {
     }
   }
 
-  private createMap(container: HTMLElement, style: string): Map {
-    return new Map({
+  private createMap(container: HTMLElement, style: string): MapboxMap {
+    return new MapboxMap({
       accessToken: environment.MAPBOX_ACCESS_KEY,
       container,
       style,
@@ -123,7 +143,7 @@ export class MapService {
     this.map2Container.hidden = style == MapStyle.OUTDOOR;
   }
 
-  private addTrailLayers(map: Map): void {
+  private addTrailLayers(map: MapboxMap): void {
     map
       .addSource('gr10-tileset', {
         type: 'vector',
@@ -161,7 +181,7 @@ export class MapService {
       });
   }
 
-  private addShelterLayer(map: Map): void {
+  private addShelterLayer(map: MapboxMap): void {
     map
       .addSource('shelters-tileset', {
         type: 'vector',
@@ -202,7 +222,7 @@ export class MapService {
       .on('mouseleave', 'shelters', () => (map.getCanvas().style.cursor = ''));
   }
 
-  private addRouteLayer(map: Map): void {
+  private addRouteLayer(map: MapboxMap): void {
     map
       .addSource('route', {
         type: 'geojson',
@@ -210,6 +230,7 @@ export class MapService {
           type: 'FeatureCollection',
           features: [],
         },
+        generateId: true,
       })
       .addLayer({
         id: 'route-line',
@@ -227,13 +248,63 @@ export class MapService {
         source: 'route',
         filter: ['==', '$type', 'Point'],
         paint: {
-          'circle-radius': 6,
-          'circle-color': '#ff00ff',
+          'circle-radius': [
+            'interpolate',
+            ['linear'],
+            ['coalesce', ['feature-state', 'hoverProgress'], 0],
+            0,
+            6,
+            1,
+            10,
+          ],
+          'circle-color': [
+            'interpolate',
+            ['linear'],
+            ['coalesce', ['feature-state', 'deleteProgress'], 0],
+            0,
+            [
+              'interpolate',
+              ['linear'],
+              ['coalesce', ['feature-state', 'hoverProgress'], 0],
+              0,
+              '#ff00ff',
+              1,
+              '#cc00cc',
+            ],
+            1,
+            '#ff0000',
+          ],
           'circle-stroke-color': '#fff',
           'circle-stroke-width': 2,
         },
       })
-      // TODO: move to separate function. wtf is this one becoming
+      .addLayer({
+        id: 'waypoints-label',
+        type: 'symbol',
+        source: 'route',
+        filter: ['==', '$type', 'Point'],
+        layout: {
+          'text-field': '×',
+          'text-size': 43,
+          'text-anchor': 'center',
+        },
+        paint: {
+          'text-color': '#fff',
+          'text-opacity': [
+            'interpolate',
+            ['linear'],
+            ['coalesce', ['feature-state', 'deleteProgress'], 0],
+            0,
+            0,
+            1,
+            1,
+          ],
+        },
+      });
+  }
+
+  private addSegmentEditingLayer(map: MapboxMap): void {
+    map
       .addSource('segment-editing-lines', {
         type: 'geojson',
         data: {
@@ -248,39 +319,12 @@ export class MapService {
         paint: {
           'line-color': '#ff00ff',
           'line-width': 3,
+          'line-opacity': 0.5,
         },
-      })
-      .on('mouseenter', 'route-line', () => {
-        map.setPaintProperty('route-line', 'line-width', 6);
-        this.setMapCursor('grab');
-      })
-      .on('mousedown', 'route-line', (e) => {
-        console.debug('starting to edit segment');
-        e.preventDefault();
-        this.isEditingSegment = true;
-        const segmentIdx = (e.features!.at(0)!.properties! as SegmentProperties).idx;
-        this.editingSegment = this.routePlannerService.route().segments.at(segmentIdx)!;
-        this.updateEditingSegment(map, e.lngLat);
-      })
-      .on('mousemove', (e) => {
-        if (!this.isEditingSegment) return;
-        console.debug('mouse moved while editing segment');
-        this.updateEditingSegment(map, e.lngLat);
-      })
-      .on('mouseup', (e) => {
-        if (!this.isEditingSegment) return;
-        console.debug('finishing editing segment');
-        this.finishEditingSegment(map, e.lngLat);
-        this.isEditingSegment = false;
-        this.editingSegment = null;
-        map.setPaintProperty('route-line', 'line-width', 3);
-      })
-      .on('mouseleave', 'route-line', () => {
-        if (!this.isEditingSegment) map.setPaintProperty('route-line', 'line-width', 3);
       });
   }
 
-  private updateEditingSegment(map: Map, newPos: LngLat): void {
+  private updateEditingSegment(map: MapboxMap, newPos: LngLat): void {
     const source = map.getSource('segment-editing-lines') as GeoJSONSource | undefined;
 
     if (!source) return console.error("segment editing lines' source not found");
@@ -296,7 +340,7 @@ export class MapService {
     });
   }
 
-  private finishEditingSegment(map: Map, lngLat: LngLat): void {
+  private finishEditingSegment(map: MapboxMap, lngLat: LngLat): void {
     const source = map.getSource('segment-editing-lines') as GeoJSONSource | undefined;
 
     if (!source) return console.error("segment editing lines' source not found");
@@ -305,28 +349,164 @@ export class MapService {
     const newPos: Position = [lngLat.lng, lngLat.lat];
     this.routePlannerService.splitSegment(this.editingSegment, newPos);
 
+    this.isEditingSegment = false;
+    this.editingSegment = null;
     source.setData({
       type: 'FeatureCollection',
       features: [],
     });
   }
 
-  private addRoutePlannerHandlers(map: Map): void {
-    map.on('click', (e) => {
-      console.debug(`Clicked at ${e.lngLat}`);
-      if (!this.isEditingRoute) return;
-
-      const { lng, lat } = e.lngLat;
-      this.routePlannerService.newWaypoint(lng, lat);
+  private cancelEditingSegment(map: MapboxMap): void {
+    const source = map.getSource('segment-editing-lines') as GeoJSONSource | undefined;
+    if (!source) return console.error("segment editing lines' source not found");
+    this.isEditingSegment = false;
+    this.editingSegment = null;
+    source.setData({
+      type: 'FeatureCollection',
+      features: [],
     });
   }
 
-  private syncIfActive(source: Map, target: Map) {
+  private addRoutePlannerHandlers(map: MapboxMap): void {
+    map
+      // Adding waypoints
+      .on('click', (e) => {
+        if (!this.isEditingRoute()) return;
+        const { lng, lat } = e.lngLat;
+        this.routePlannerService.newWaypoint(lng, lat);
+      })
+      // Segment editing
+      .on('mouseenter', 'route-line', () => {
+        this.isOverLine = true;
+        this.updateLineHover(map);
+      })
+      .on('mousedown', 'route-line', (e) => {
+        e.preventDefault();
+        this.isEditingSegment = true;
+        const segmentIdx = (e.features!.at(0)!.properties! as SegmentProperties).idx;
+        this.editingSegment = this.routePlannerService.route().segments.at(segmentIdx)!;
+        this.updateEditingSegment(map, e.lngLat);
+      })
+      .on('mousemove', (e) => {
+        if (!this.isEditingSegment) return;
+        this.updateEditingSegment(map, e.lngLat);
+      })
+      .on('mouseup', (e) => {
+        if (!this.isEditingSegment) return;
+        this.finishEditingSegment(map, e.lngLat);
+        this.updateLineHover(map);
+      })
+      .on('mouseleave', 'route-line', () => {
+        this.isOverLine = false;
+        if (!this.isEditingSegment) this.updateLineHover(map);
+      })
+      // Waypoint editing
+      .on('mouseenter', 'waypoints', (e) => {
+        this.isOverWaypoint = true;
+        this.updateLineHover(map);
+
+        const id = e.features!.at(0)!.id as number;
+        if (id == undefined) return;
+        this.hoveredWaypointId = id;
+
+        if (!this.hoverProgress.has(id)) this.hoverProgress.set(id, 0);
+        if (!this.deleteProgress.has(id)) this.deleteProgress.set(id, 0);
+
+        this.animateHover(map, this.hoveredWaypointId, true);
+        if (this.isShiftHeld) this.animateDelete(map, id, true);
+      })
+      .on('mouseleave', 'waypoints', () => {
+        this.isOverWaypoint = false;
+        this.updateLineHover(map);
+        if (this.hoveredWaypointId == null) return;
+        const id = this.hoveredWaypointId;
+        this.animateHover(map, id, false);
+        this.animateDelete(map, id, false);
+        this.hoveredWaypointId = null;
+      })
+      .on('mousedown', 'waypoints', (e) => {
+        e.preventDefault();
+        if (this.hoveredWaypointId == null || !this.isShiftHeld) return;
+        const waypointIdx = (e.features!.at(0)!.properties! as WaypointProperties).idx;
+        this.routePlannerService.deleteWaypoint(waypointIdx);
+        this.isOverWaypoint = false;
+        this.hoveredWaypointId = null;
+      });
+
+    globalThis.addEventListener('keydown', (e) => {
+      if (e.key == 'Shift') {
+        this.isShiftHeld = true;
+        if (this.hoveredWaypointId == null) return;
+        this.animateDelete(map, this.hoveredWaypointId, true);
+      } else if (e.key == 'Escape') {
+        this.cancelEditingSegment(map);
+      }
+    });
+    globalThis.addEventListener('keyup', (e) => {
+      if (e.key != 'Shift') return;
+      this.isShiftHeld = false;
+      if (this.hoveredWaypointId == null) return;
+      this.animateDelete(map, this.hoveredWaypointId, false);
+    });
+  }
+
+  private updateLineHover(map: MapboxMap): void {
+    if (this.isOverLine && !this.isOverWaypoint) {
+      map.setPaintProperty('route-line', 'line-width', 6);
+      this.setMapCursor('grab');
+    } else {
+      map.setPaintProperty('route-line', 'line-width', 3);
+      if (!this.isOverWaypoint) this.setMapCursor('default');
+    }
+  }
+
+  private animateHover(map: MapboxMap, id: number, enter: boolean) {
+    this.animate(map, id, 'hoverProgress', this.hoverProgress, enter);
+  }
+
+  private animateDelete(map: MapboxMap, id: number, enter: boolean) {
+    this.animate(map, id, 'deleteProgress', this.deleteProgress, enter);
+  }
+
+  private animate(
+    map: MapboxMap,
+    id: number,
+    key: string,
+    store: Map<number, number>,
+    enter: boolean,
+  ) {
+    const duration = 100;
+    const start = performance.now();
+    const from = store.get(id) ?? (enter ? 0 : 1);
+    const to = enter ? 1 : 0;
+
+    const frame = (now: number) => {
+      const t = Math.min((now - start) / duration, 1);
+      const progress = from + (to - from) * ease(t);
+      store.set(id, progress);
+      map.setFeatureState({ source: 'route', id }, { [key]: progress });
+      if (t < 1) requestAnimationFrame(frame);
+    };
+
+    requestAnimationFrame(frame);
+  }
+
+  private clearHoverState(map: MapboxMap): void {
+    this.hoverProgress.forEach((_, id) =>
+      map.setFeatureState({ source: 'route', id }, { hoverProgress: 0, deleteProgress: 0 }),
+    );
+    this.hoverProgress.clear();
+    this.deleteProgress.clear();
+    this.hoveredWaypointId = null;
+  }
+
+  private syncIfActive(source: MapboxMap, target: MapboxMap) {
     if (source.getContainer().hidden) return;
     this.sync(source, target);
   }
 
-  private sync(source: Map, target: Map) {
+  private sync(source: MapboxMap, target: MapboxMap) {
     console.debug(`Syncing ${source.getContainer().id} to ${target.getContainer().id}`);
     target.jumpTo({
       center: source.getCenter(),
@@ -344,5 +524,18 @@ export class MapService {
 
   private setMapCursor(style: Property.Cursor) {
     document.documentElement.style.setProperty('--map-cursor', style);
+  }
+
+  printDebugInfo(): void {
+    console.debug(
+      'rendered route:',
+      this.map1?.queryRenderedFeatures({ layers: ['waypoints', 'waypoints-label', 'route-line'] }),
+    );
+    console.debug('isEditingSegment: ', this.isEditingSegment);
+    console.debug('isEditingRoute: ', this.isEditingRoute());
+    console.debug('editingSegment: ', this.editingSegment);
+    console.debug('hoveredWaypointId: ', this.hoveredWaypointId);
+    console.debug('hoverProgress: ', this.hoverProgress);
+    console.debug('isShiftHeld: ', this.isShiftHeld);
   }
 }

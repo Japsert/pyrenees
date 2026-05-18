@@ -2,8 +2,13 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { FeatureCollection, Position } from 'geojson';
 import { HttpClient } from '@angular/common/http';
 import { map, mergeMap, Subject } from 'rxjs';
-import { Route, Segment, Waypoint } from './route/route';
-import { LngLat } from 'mapbox-gl';
+import {
+  BRouterFeatureCollection,
+  Route,
+  RouteFeatureCollection,
+  Segment,
+  VersionMismatchError,
+} from './route/route';
 
 @Injectable({
   providedIn: 'root',
@@ -21,7 +26,11 @@ export class RoutePlannerService {
 
   constructor() {
     // Load route from local storage
-    this.loadRoute();
+    try {
+      this.loadRoute();
+    } catch (error) {
+      console.log('Error during loading from local storage:', error);
+    }
 
     // RxJS magic to merge simultaneous requests when user clicks rapidly
     this.apiCall
@@ -30,7 +39,7 @@ export class RoutePlannerService {
           const start = segment.start.position;
           const end = segment.end.position;
           return this.http
-            .get<FeatureCollection>(this.BROUTER_API, {
+            .get<BRouterFeatureCollection>(this.BROUTER_API, {
               params: {
                 lonlats: `${start[0]},${start[1]}|${end[0]},${end[1]}`,
                 profile: 'shortest',
@@ -63,6 +72,14 @@ export class RoutePlannerService {
     this.setRoute(next);
     this.routeSegment(seg1);
     this.routeSegment(seg2);
+  }
+
+  deleteWaypoint(idx: number): void {
+    this.pushHistory();
+    const next = this.route().clone();
+    const maybeSegment = next.deleteWaypoint(idx);
+    this.setRoute(next);
+    if (maybeSegment) this.routeSegment(maybeSegment);
   }
 
   clear(): void {
@@ -101,7 +118,7 @@ export class RoutePlannerService {
   }
 
   private saveRoute(): void {
-    const fc: FeatureCollection = this.route().toGeoJSON();
+    const fc: RouteFeatureCollection = this.route().toGeoJSON();
     localStorage.setItem('route', JSON.stringify(fc));
   }
 
@@ -109,7 +126,15 @@ export class RoutePlannerService {
     const savedRoute = localStorage.getItem('route');
     if (savedRoute == null) return;
 
-    const fc = JSON.parse(savedRoute) as FeatureCollection;
-    this.setRoute(Route.fromGeoJSON(fc));
+    const fc = JSON.parse(savedRoute) as RouteFeatureCollection;
+    try {
+      this.setRoute(Route.fromGeoJSON(fc));
+    } catch (error) {
+      if (!(error instanceof VersionMismatchError)) throw error;
+    }
+  }
+
+  printDebugInfo(): void {
+    console.debug('current route:', this.route());
   }
 }
