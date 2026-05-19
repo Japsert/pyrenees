@@ -151,4 +151,33 @@ export class RoutePlannerService {
   printDebugInfo(): void {
     console.debug('current route:', this.route());
   }
+
+  export(): void {
+    const fc = this.route().toGeoJSON();
+    const json = JSON.stringify(fc, null, 2);
+    const blob = new Blob([json], { type: 'application/geo+json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'route.geojson';
+    a.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  import(): void {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.geojson,application/geo+json';
+    input.onchange = async () => {
+      const file = input.files?.item(0);
+      if (!file) return console.error('No file selected!');
+
+      const text = await file.text();
+      const fc = JSON.parse(text) as RouteFeatureCollection;
+      this.setRoute(Route.fromGeoJSON(fc));
+    };
+    input.click();
+  }
 }

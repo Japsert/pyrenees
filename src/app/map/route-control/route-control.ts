@@ -63,6 +63,14 @@ export class RouteControlComponent {
     this.routePlannerService.printDebugInfo();
     this.mapService.printDebugInfo();
   }
+
+  export(): void {
+    this.routePlannerService.export();
+  }
+
+  import(): void {
+    this.routePlannerService.import();
+  }
 }
 
 // Mapbox control. Needs appRef and injector to work as an Angular component
