@@ -31,15 +31,8 @@ export class Map implements OnInit, OnDestroy {
   protected readonly length = computed(() => ((this.routeStats()?.length ?? 0) / 1000).toFixed(2));
   protected readonly totalAscent = computed(() => this.routeStats()?.totalAscend);
   protected readonly netAscent = computed(() => this.routeStats()?.netAscend);
-  protected readonly time = computed(() => this.routeStats()?.time);
   protected readonly timeH = computed(() => Math.trunc((this.routeStats()?.time ?? 0) / 3600));
   protected readonly timeM = computed(() => Math.trunc(((this.routeStats()?.time ?? 0) % 3600) / 60));
-
-  constructor() {
-    effect(() => {
-      console.debug(this.time());
-    })
-  }
 
   ngOnInit() {
     this.mapService.initMaps(this.map1Container.nativeElement, this.map2Container.nativeElement);
