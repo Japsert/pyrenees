@@ -1,3 +1,32 @@
 <div #map1Container id="map1-container"></div>
 <div #map2Container id="map2-container"></div>
-<app-style-switcher class="absolute w-28 h-28 left-4 bottom-8" />
+<div #bottomBar class="absolute bottom-2 left-2 right-2 h-32 flex gap-2">
+  <app-style-switcher class="w-32" />
+  <div #routeInfo class="w-full bg-white rounded-lg shadow p-4 flex">
+    <div #routeStats class="w-fit grid grid-cols-[max-content_max-content] grid-rows-4 gap-2">
+      <div class="stat-key">length</div>
+      <div class="stat-value">
+        {{ length() }}
+        <span class="unit"> km</span>
+      </div>
+      <div class="stat-key">total ascent</div>
+      <div class="stat-value">
+        {{ totalAscent() }}
+        <span class="unit"> m</span>
+      </div>
+      <div class="stat-key">net ascent</div>
+      <div class="stat-value">
+        {{ netAscent() }}
+        <span class="unit"> m</span>
+      </div>
+      <div class="stat-key">time</div>
+      <div>
+        <span class="stat-value">{{ timeH() }}</span>
+        <span class="unit">h</span>
+        <span class="inline-block w-1"></span>
+        <span class="stat-value">{{ timeM() }}</span>
+        <span class="unit">m</span>
+      </div>
+    </div>
+  </div>
+</div>

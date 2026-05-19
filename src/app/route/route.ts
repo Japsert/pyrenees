@@ -54,10 +54,10 @@ type SegmentInfo = {
 
 type BRouterGeoJSONProperties = {
   times: number[];
-  'track-length': number;
-  'filtered ascend': number;
-  'plain-ascend': number;
-  'total-time': number;
+  'track-length': string;
+  'filtered ascend': string;
+  'plain-ascend': string;
+  'total-time': string;
 };
 export type BRouterFeatureCollection = FeatureCollection<LineString, BRouterGeoJSONProperties>;
 
@@ -111,10 +111,10 @@ export class Segment {
     //if (!times) debugger;
     this.track = coordinates.map((pos, idx) => new Node([pos[0], pos[1]], pos[2], times[idx]));
     this.info = {
-      length: p['track-length'],
-      totalAscend: p['filtered ascend'],
-      netAscend: p['plain-ascend'],
-      time: p['total-time'],
+      length: +p['track-length'],
+      totalAscend: +p['filtered ascend'],
+      netAscend: +p['plain-ascend'],
+      time: +p['total-time'],
     };
   }
 }
@@ -140,6 +140,8 @@ export type RouteFeatureCollection = FeatureCollection<
   WaypointProperties | SegmentProperties
 >;
 
+export type RouteStats = SegmentInfo;
+
 export class Route {
   private static readonly VERSION: number = 4;
   initialWaypoint: Waypoint | null = null;
@@ -150,6 +152,26 @@ export class Route {
     copy.initialWaypoint = this.initialWaypoint;
     copy.segments = [...this.segments];
     return copy;
+  }
+
+  getStats(): RouteStats | null {
+    const stats = {
+      length: 0,
+      totalAscend: 0,
+      netAscend: 0,
+      time: 0,
+    } satisfies RouteStats;
+
+    for (const segment of this.segments) {
+      const info = segment.info;
+      if (!info) return null;
+      stats.length += info.length;
+      stats.totalAscend += info.totalAscend;
+      stats.netAscend += info.netAscend;
+      stats.time += info.time;
+    };
+
+    return stats;
   }
 
   appendWaypoint(position: Position): Segment | null {
