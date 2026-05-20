@@ -1,0 +1,9 @@
+.stat-key {
+  font-weight: 300;
+  color: oklch(70% 0 0);
+  text-align: right;
+}
+
+.unit {
+  color: oklch(70% 0 0);
+}
