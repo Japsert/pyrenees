@@ -28,3 +28,7 @@ function cubicBezier(t: number, p1x: number, p1y: number, p2x: number, p2y: numb
 export function ease(t: number): number {
   return cubicBezier(t, 0.25, 0.1, 0.25, 1);
 }
+
+export function generateId(): string {
+  return Math.random().toString(36).slice(2, 8);
+}

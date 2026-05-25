@@ -14,6 +14,9 @@ import {
   providedIn: 'root',
 })
 export class RoutePlannerService {
+  private readonly http = inject(HttpClient);
+  private readonly BROUTER_API = 'https://brouter.de/brouter';
+
   route = signal<Route>(new Route());
   private readonly history = signal<Route[]>([]);
   private readonly future = signal<Route[]>([]);
@@ -21,13 +24,10 @@ export class RoutePlannerService {
   readonly canRedo = computed(() => this.future().length > 0);
   private readonly apiCall = new Subject<Segment>();
 
-  private readonly http = inject(HttpClient);
-  private readonly BROUTER_API = 'https://brouter.de/brouter';
-
   constructor() {
     // Load route from local storage
     try {
-      this.loadRoute();
+      this.loadFromStorage();
     } catch (error) {
       console.log('Error during loading from local storage:', error);
     }
@@ -51,9 +51,14 @@ export class RoutePlannerService {
         }),
       )
       .subscribe(({ segment, fc }) => {
-        segment.updateFromFeatureCollection(fc);
-        this.route.update((route) => route.clone());
-        this.saveRoute();
+        this.route.update((route) => {
+          const next = route.clone();
+          const idx = next.segments.indexOf(segment);
+          if (idx == -1) return next;
+          next.segments[idx] = segment.withData(fc);
+          return next;
+        });
+        this.save();
       });
   }
 
@@ -70,17 +75,17 @@ export class RoutePlannerService {
     if (segment) this.routeSegment(segment);
   }
 
-  moveWaypoint(idx: number, newPos: Position): void {
-    const newSegments = this.updateRoute((route) => route.moveWaypoint(idx, newPos));
+  moveWaypoint(id: string, newPos: Position): void {
+    const newSegments = this.updateRoute((route) => route.moveWaypoint(id, newPos));
     if (newSegments) {
       const { prevSegment, nextSegment } = newSegments;
-      this.routeSegment(prevSegment);
-      this.routeSegment(nextSegment);
+      if (prevSegment) this.routeSegment(prevSegment);
+      if (nextSegment) this.routeSegment(nextSegment);
     }
   }
 
-  deleteWaypoint(idx: number): void {
-    const maybeSegment = this.updateRoute((route) => route.deleteWaypoint(idx));
+  deleteWaypoint(id: string): void {
+    const maybeSegment = this.updateRoute((route) => route.deleteWaypoint(id));
     if (maybeSegment) this.routeSegment(maybeSegment);
   }
 
@@ -128,15 +133,15 @@ export class RoutePlannerService {
 
   private setRoute(route: Route): void {
     this.route.set(route);
-    this.saveRoute();
+    this.save();
   }
 
-  private saveRoute(): void {
+  private save(): void {
     const fc: RouteFeatureCollection = this.route().toGeoJSON();
     localStorage.setItem('route', JSON.stringify(fc));
   }
 
-  private loadRoute(): void {
+  private loadFromStorage(): void {
     const savedRoute = localStorage.getItem('route');
     if (savedRoute == null) return;
 

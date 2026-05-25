@@ -62,3 +62,28 @@ wp0    wp1 wp3     wp4 wp4    wp5
 // insert actual segments (idx 1&2, wp indices 1-2,2-3)
 segment 0 - segment 1 - segment 2 - segment 3 - segment 4
 wp0    wp1 wp1     wp2 wp2     wp3 wp3     wp4 wp4    wp5
+
+## Event handlers
+
+features:
+- select waypoint by clicking
+- delete waypoint by selecting and backspace
+- move waypoint by dragging
+- move segment by dragging
+
+handlers:
+- on click: if adding wps, add wp
+- on mouseenter waypoint: if not dragging route, make wp bigger, remember that we're hovering wp
+- on mouseleave waypoint: if not dragging route, return to original size, reset hovering wp
+- on mousedown waypoint: select (make darker), potential wp drag
+- on mouseleave waypoint: if potential wp drag, start dragging wp (make half transparent and render marker at cursor)
+- on mousemove: if dragging wp, update wp drag, update marker
+- on mouseup waypoint: if not dragging route, if same waypoint, cancel (potential) wp drag
+- on mouseup: if dragging wp, finish wp drag
+- on mouseenter route: if not dragging wp, if not hovering wp, make bigger, render transparent marker at cursor
+- on mouseleave route: if not dragging wp, if not hovering wp, make smaller, stop rendering transparent marker
+- on mousedown route: if not hovering wp, start dragging route, make transparent marker opaque
+- on mousemove: if dragging route, update route drag, update marker
+- on mouseup: if dragging route, finish route drag
+
+also add a bigger, invisible route underneath the route that also listens for mouse events!

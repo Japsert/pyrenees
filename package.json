@@ -21,7 +21,10 @@
     "@angular/router": "^21.2.0",
     "@types/geojson": "^7946.0.16",
     "csstype": "^3.2.3",
+    "echarts": "^6.1.0",
+    "haversine-distance": "^1.2.4",
     "mapbox-gl": "^3.22.0",
+    "ngx-echarts": "^21.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

@@ -10,16 +10,18 @@ import {
 import { MapService } from '../../map.service';
 import { IControl } from 'mapbox-gl';
 import { RoutePlannerService } from '../../route-planner.service';
+import { RouteInteractionService } from '../../route-interaction.service';
 
 @Component({
   selector: 'app-route-control',
   templateUrl: './route-control.html',
 })
 export class RouteControlComponent {
-  private readonly mapService = inject(MapService);
-  private readonly routePlannerService = inject(RoutePlannerService);
+  private readonly map = inject(MapService);
+  private readonly routeInteraction = inject(RouteInteractionService);
+  private readonly routePlanner = inject(RoutePlannerService);
   
-  protected isEditing = this.mapService.isEditingRoute;
+  protected isEditing = this.routeInteraction.isAddingWaypoints;
 
   @HostListener('document:keydown', ['$event'])
   onKeyDown(e: KeyboardEvent) {
@@ -36,40 +38,40 @@ export class RouteControlComponent {
   }
 
   undo(): void {
-    this.routePlannerService.undo();
+    this.routePlanner.undo();
   }
 
   redo(): void {
-    this.routePlannerService.redo();
+    this.routePlanner.redo();
   }
 
   canUndo(): boolean {
-    return this.routePlannerService.canUndo();
+    return this.routePlanner.canUndo();
   }
 
   canRedo(): boolean {
-    return this.routePlannerService.canRedo();
+    return this.routePlanner.canRedo();
   }
 
   edit(): void {
-    this.mapService.toggleEditingRoute();
+    this.routeInteraction.toggleAddingWaypoints();
   }
 
   clear(): void {
-    this.routePlannerService.clear();
+    this.routePlanner.clear();
   }
 
   debug(): void {
-    this.routePlannerService.printDebugInfo();
-    this.mapService.printDebugInfo();
+    this.routePlanner.printDebugInfo();
+    this.map.printDebugInfo();
   }
 
   export(): void {
-    this.routePlannerService.export();
+    this.routePlanner.export();
   }
 
   import(): void {
-    this.routePlannerService.import();
+    this.routePlanner.import();
   }
 }
 

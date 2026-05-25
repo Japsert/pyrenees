@@ -1,6 +1,17 @@
 <app-style-switcher class="w-32" />
-<div #routeInfo class="w-full bg-white rounded-lg shadow p-4 flex">
-  <div #routeStats class="w-fit grid grid-cols-[max-content_max-content] grid-rows-4 gap-2">
+<!--<div class="bg-white rounded w-4xl p-4 grid grid-rows-4 grid-flow-col text-sm">
+  <div>isDraggingSegment: {{ routeInteraction.isDraggingSegment() }}</div>
+  <div>hasSelectedWaypoint: {{ routeInteraction.hasSelectedWaypoint() }}</div>
+  <div>mayDragWaypoint: {{ routeInteraction.mayDragWaypoint() }}</div>
+  <div>isDraggingWaypoint: {{ routeInteraction.isDraggingWaypoint() }}</div>
+  <div>hoveredWaypointId {{ routeInteraction.hoveredWaypointId() }}</div>
+  <div>isOverWaypoint: {{ routeInteraction.isOverWaypoint() }}</div>
+  <div>isOverLine: {{ routeInteraction.isOverLine() }}</div>
+  <div>selectedWaypointId: {{ routeInteraction.selectedWaypointId() }}</div>
+  <div>draggedSegment id: {{ routeInteraction.draggedSegment()?.id }}</div>
+</div>-->
+<div #routeInfo class="w-full bg-white rounded-lg shadow flex">
+  <div #routeStats class="w-fit grid grid-cols-[max-content_max-content] grid-rows-4 gap-2 p-4">
     <div class="stat-key">length</div>
     <div class="stat-value">
       {{ length() }}
@@ -25,4 +36,5 @@
       <span class="unit">m</span>
     </div>
   </div>
+  <app-height-map class="w-full"/>
 </div>
