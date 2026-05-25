@@ -8,6 +8,7 @@ import { SVGRenderer } from 'echarts/renderers';
 import { EChartsOption } from 'echarts';
 import { GridComponent, TooltipComponent } from 'echarts/components';
 import { LineChart } from 'echarts/charts';
+import { CallbackDataParams } from 'echarts/types/dist/shared';
 echarts.use([SVGRenderer, GridComponent, TooltipComponent, LineChart]);
 
 @Component({
@@ -34,8 +35,9 @@ export class HeightMap {
     xAxis: {
       type: 'value',
       boundaryGap: [0, 0],
-      min: 1000,
-      max: 'dataMax',
+      max(extent) {
+        return Math.ceil(extent.max);
+      },
       axisLine: {
         show: true,
         lineStyle: { width: 2, color: '#d0d0d0' },
@@ -88,11 +90,17 @@ export class HeightMap {
       axisPointer: {
         type: 'line',
         snap: true,
-        lineStyle: { width: 2, color: '#b0b0b0' },
+        lineStyle: { width: 1, color: '#b0b0b0' },
+      },
+      formatter(params: any) {
+        const x = `distance: ${Math.round(params[0].axisValue)} m`;
+        const y = `elevation: ${Math.round(params[0].value[1])} m`;
+        return `${x}<br/>${y}`;
       },
     },
 
     series: {
+      name: 'elevation',
       type: 'line',
       smooth: true,
       symbol: 'none',

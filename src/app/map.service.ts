@@ -149,7 +149,7 @@ export class MapService {
   printDebugInfo(): void {
     console.debug(
       'rendered route:',
-      this.map1?.queryRenderedFeatures({ layers: ['waypoints', 'waypoints-label', 'route-line'] }),
+      this.map1?.queryRenderedFeatures({ layers: ['waypoints', 'route-line'] }),
     );
   }
 }
