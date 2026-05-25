@@ -1,7 +1,15 @@
 .stat-key {
+  display: flex;
   font-weight: 300;
   color: oklch(70% 0 0);
-  text-align: right;
+  align-items: center;
+  justify-content: right;
+}
+
+.stat-value {
+  display: flex;
+  align-items: center;
+  justify-content: left;
 }
 
 .unit {
