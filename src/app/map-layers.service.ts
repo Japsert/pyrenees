@@ -106,17 +106,35 @@ export class MapLayersService {
         promoteId: 'id',
       })
       .addLayer({
-        id: 'route-line',
+        id: LayerIds.ROUTE_LINE,
         type: 'line',
         source: 'route',
         filter: ['==', '$type', 'LineString'],
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
         paint: {
           'line-color': '#ffaa00',
-          'line-width': 6,
+          'line-width': 3,
         },
       })
       .addLayer({
-        id: 'waypoints',
+        id: LayerIds.ROUTE_LINE_HITBOX,
+        type: 'line',
+        source: 'route',
+        filter: ['==', '$type', 'LineString'],
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+        paint: {
+          'line-color': 'transparent',
+          'line-width': 16,
+        },
+      })
+      .addLayer({
+        id: LayerIds.WAYPOINTS,
         type: 'circle',
         source: 'route',
         filter: ['==', '$type', 'Point'],

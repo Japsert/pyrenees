@@ -1,5 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { Map as MapboxMap, LngLat, GeoJSONFeature, MapMouseEvent } from 'mapbox-gl';
+import { Map as MapboxMap, LngLat, GeoJSONFeature } from 'mapbox-gl';
 import { Segment, SegmentProperties, WaypointProperties } from './route/route';
 import { Position } from 'geojson';
 import { RoutePlannerService } from './route-planner.service';
@@ -108,7 +108,7 @@ export class RouteInteractionService {
         this.mayDragWaypointId.set(this.hoveredWaypointId()!);
       })
       // Mousemove handler combined with route's below
-      .on('mouseup', 'waypoints', (e) => {
+      .on('mouseup', LayerIds.WAYPOINTS, (e) => {
         // if not dragging route, if same waypoint, cancel (potential) wp drag
         if (this.isDraggingSegment()) return;
         const waypointId = (e.features?.at(0)?.properties as WaypointProperties).id;
@@ -117,7 +117,7 @@ export class RouteInteractionService {
           this.cancelDraggingWaypoint(map);
       })
       // Mouseup handler combined with route's below
-      .on('mouseenter', 'route-line', (e) => {
+      .on('mouseenter', LayerIds.ROUTE_LINE_HITBOX, (e) => {
         // if not dragging wp, if not hovering wp, make bigger, render transparent marker at cursor
         if (this.isDraggingWaypoint()) return;
         this.isOverLine.set(true);
@@ -127,20 +127,20 @@ export class RouteInteractionService {
           coordinates: [e.lngLat.lng, e.lngLat.lat],
         });
       })
-      .on('mouseleave', 'route-line', () => {
+      .on('mouseleave', LayerIds.ROUTE_LINE_HITBOX, () => {
         // if not dragging wp, if not hovering wp, make smaller, stop rendering transparent marker
         if (this.isDraggingWaypoint()) return;
         this.isOverLine.set(false);
         this.updateLineHover(map);
         this.mapLayers.removeLayerData(map, LayerIds.ROUTE_HOVER_CURSOR);
       })
-      .on('mousedown', 'route-line', (e) => {
+      .on('mousedown', LayerIds.ROUTE_LINE_HITBOX, (e) => {
         // if not hovering wp, start dragging route, make transparent marker opaque
         if (this.isHoveringWaypoint()) return;
         e.preventDefault();
         this.beginDraggingSegment(map, e.features!, e.lngLat);
       })
-      .on('mousemove', 'route-line', (e) => {
+      .on('mousemove', LayerIds.ROUTE_LINE_HITBOX, (e) => {
         if (this.isDraggingWaypoint()) return;
         this.isOverLine.set(true);
         this.updateLineHover(map);
@@ -248,13 +248,13 @@ export class RouteInteractionService {
 
   private updateLineHover(map: MapboxMap): void {
     if (this.isOverLine() && !this.isOverWaypoint() && !this.isDraggingWaypoint()) {
-      map.setPaintProperty('route-line', 'line-width', 12);
-      if (map.getLayer('route-hover-cursor') && !this.isDraggingSegment())
-        map.setLayoutProperty('route-hover-cursor', 'visibility', 'visible');
+      map.setPaintProperty(LayerIds.ROUTE_LINE, 'line-width', 6);
+      if (map.getLayer(LayerIds.ROUTE_HOVER_CURSOR) && !this.isDraggingSegment())
+        map.setLayoutProperty(LayerIds.ROUTE_HOVER_CURSOR, 'visibility', 'visible');
     } else if (!this.isDraggingSegment()) {
-      map.setPaintProperty('route-line', 'line-width', 6);
-      if (map.getLayer('route-hover-cursor'))
-        map.setLayoutProperty('route-hover-cursor', 'visibility', 'none');
+      map.setPaintProperty(LayerIds.ROUTE_LINE, 'line-width', 3);
+      if (map.getLayer(LayerIds.ROUTE_HOVER_CURSOR))
+        map.setLayoutProperty(LayerIds.ROUTE_HOVER_CURSOR, 'visibility', 'none');
     }
   }
 
@@ -335,7 +335,7 @@ export class RouteInteractionService {
     if (!segment) return console.error('Could not find segment for dragging');
     this.draggedSegment.set(segment);
     this.updateDraggingSegment(map, newPos);
-    map.setLayoutProperty('route-hover-cursor', 'visibility', 'none');
+    map.setLayoutProperty(LayerIds.ROUTE_HOVER_CURSOR, 'visibility', 'none');
   }
 
   private updateDraggingSegment(map: MapboxMap, newPos: LngLat): void {
