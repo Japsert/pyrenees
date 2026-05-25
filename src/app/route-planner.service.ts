@@ -8,6 +8,7 @@ import {
   RouteFeatureCollection,
   Segment,
   VersionMismatchError,
+  Waypoint,
 } from './route/route';
 
 @Injectable({
@@ -87,6 +88,13 @@ export class RoutePlannerService {
   deleteWaypoint(id: string): void {
     const maybeSegment = this.updateRoute((route) => route.deleteWaypoint(id));
     if (maybeSegment) this.routeSegment(maybeSegment);
+  }
+
+  findWaypoint(id: string): Waypoint | null {
+    for (const segment of this.route().segments) {
+      if (segment.start.id === id) return segment.start;
+    }
+    return null;
   }
 
   splitSegment(segment: Segment, newPos: Position): void {

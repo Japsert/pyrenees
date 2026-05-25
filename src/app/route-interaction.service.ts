@@ -56,12 +56,18 @@ export class RouteInteractionService {
       .on('click', (e) => {
         // on click: if adding wps, add wp, deselect wp unless clicking an existing waypoint
         const clickedWaypoint =
-          map.queryRenderedFeatures(e.point, { layers: ['waypoints'] }).length > 0;
+          map.queryRenderedFeatures(e.point, { layers: [LayerIds.WAYPOINTS] }).at(0) ?? null;
         if (this.isAddingWaypoints()) {
-          const newPos: Position = [e.lngLat.lng, e.lngLat.lat];
+          let newPos: Position;
+          if (clickedWaypoint) {
+            const id = (clickedWaypoint.properties as WaypointProperties).id;
+            newPos = this.routePlanner.findWaypoint(id)!.position;
+          } else {
+            newPos = [e.lngLat.lng, e.lngLat.lat];
+          }
           this.routePlanner.newWaypoint(newPos);
         }
-        if (!clickedWaypoint) {
+        if (clickedWaypoint == null) {
           map.setFeatureState(
             { source: 'route', id: this.selectedWaypointId()! },
             { selected: false },
@@ -69,7 +75,7 @@ export class RouteInteractionService {
           this.selectedWaypointId.set(null);
         }
       })
-      .on('mouseenter', 'waypoints', (e) => {
+      .on('mouseenter', LayerIds.WAYPOINTS, (e) => {
         // if not dragging route, make wp bigger, remember that we're hovering wp
         if (this.isDraggingSegment()) return;
         const waypointId = (e.features?.at(0)?.properties as WaypointProperties).id;
@@ -79,7 +85,7 @@ export class RouteInteractionService {
         if (!this.hoverProgress.has(waypointId)) this.hoverProgress.set(waypointId, 0);
         this.animateHover(map, waypointId, true);
       })
-      .on('mouseleave', 'waypoints', (e) => {
+      .on('mouseleave', LayerIds.WAYPOINTS, (e) => {
         // if not dragging route, return to original size, reset hovering wp, if potential wp drag, start dragging wp (make half transparent and render marker at cursor)
         if (this.isDraggingSegment()) return;
         if (this.mayDragWaypoint())
@@ -91,7 +97,7 @@ export class RouteInteractionService {
         this.animateHover(map, this.hoveredWaypointId()!, false);
         this.hoveredWaypointId.set(null);
       })
-      .on('mousedown', 'waypoints', (e) => {
+      .on('mousedown', LayerIds.WAYPOINTS, (e) => {
         // select (make darker), potential wp drag
         e.preventDefault();
         if (!this.isHoveringWaypoint()) return console.warn('Selecting a non-hovered waypoint?');
@@ -167,16 +173,6 @@ export class RouteInteractionService {
         });
 
         // Re-evaluate hover state
-        //if (draggingWaypointId) {
-        //  this.hoveredWaypointId.set(draggingWaypointId);
-        //  this.isOverWaypoint.set(true);
-        //  this.updateLineHover(map);
-        //  if (!this.hoverProgress.has(draggingWaypointId))
-        //    this.hoverProgress.set(draggingWaypointId, 0);
-        //  this.animateHover(map, draggingWaypointId, true);
-        //}
-        // Re-evaluate hover state
-
         if (draggingWaypointId) {
           this.hoveredWaypointId.set(draggingWaypointId);
           this.isOverWaypoint.set(true);
