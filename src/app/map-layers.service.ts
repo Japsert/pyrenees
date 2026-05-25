@@ -156,7 +156,7 @@ export class MapLayersService {
           'circle-color': [
             'case',
             ['coalesce', ['feature-state', 'selected'], false],
-            '#ff6600',
+            '#ff3300',
             [
               'interpolate',
               ['linear'],
