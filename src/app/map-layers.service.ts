@@ -11,6 +11,7 @@ export class MapLayersService {
     this.addTrailLayers(map);
     //this.addShelterLayer(map);
     this.addRouteLayer(map);
+    this.addChartMarkerLayer(map)
     this.addEditLinesLayer(map);
     this.addDraggingCursorLayer(map);
     this.addRouteHoverCursorLayer(map);
@@ -178,6 +179,27 @@ export class MapLayersService {
           ],
         },
       });
+  }
+
+  addChartMarkerLayer(map: MapboxMap): void {
+    map.addSource(LayerIds.CHART_MARKER, {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: [],
+      },
+    });
+    map.addLayer({
+      id: LayerIds.CHART_MARKER,
+      type: 'circle',
+      source: LayerIds.CHART_MARKER,
+      paint: {
+        'circle-radius': 4,
+        'circle-color': '#f80',
+        'circle-stroke-width': 1,
+        'circle-stroke-color': '#fff',
+      },
+    }, LayerIds.WAYPOINTS);
   }
 
   private addEditLinesLayer(map: MapboxMap): void {

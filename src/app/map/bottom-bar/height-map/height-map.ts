@@ -5,11 +5,20 @@ import { Node } from '../../../route/route';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
 import { SVGRenderer } from 'echarts/renderers';
-import { EChartsOption } from 'echarts';
+import { EChartsOption, EChartsType, ElementEvent } from 'echarts';
 import { GridComponent, TooltipComponent } from 'echarts/components';
 import { LineChart } from 'echarts/charts';
-import { CallbackDataParams } from 'echarts/types/dist/shared';
+import { MapLayersService } from '../../../map-layers.service';
+import { MapService } from '../../../map.service';
+import { LayerIds } from '../../../layer-ids.enum';
+import { Position } from 'geojson';
 echarts.use([SVGRenderer, GridComponent, TooltipComponent, LineChart]);
+
+type DataPoint = {
+  distance: number;
+  elevation: number;
+  position: Position;
+};
 
 @Component({
   selector: 'app-height-map',
@@ -19,11 +28,14 @@ echarts.use([SVGRenderer, GridComponent, TooltipComponent, LineChart]);
   providers: [provideEchartsCore({ echarts })],
 })
 export class HeightMap {
-  private readonly routePlannerService = inject(RoutePlannerService);
-  private readonly route = this.routePlannerService.route;
+  private readonly map = inject(MapService);
+  private readonly mapLayers = inject(MapLayersService);
+  private readonly routePlanner = inject(RoutePlannerService);
+  private readonly route = this.routePlanner.route;
+
+  private chart: EChartsType | null = null;
 
   protected readonly initOptions = { renderer: 'svg' };
-
   protected readonly options: EChartsOption = {
     textStyle: {
       fontFamily:
@@ -103,19 +115,32 @@ export class HeightMap {
       name: 'elevation',
       type: 'line',
       smooth: true,
-      symbol: 'none',
+      symbol: 'circle',
+      symbolSize: 10,
       areaStyle: { opacity: 0.1 },
       lineStyle: { color: '#ffa500', width: 2 },
-      itemStyle: { color: '#ffa500' },
+      itemStyle: { opacity: 0, color: '#f80' },
+      triggerEvent: true,
+      animation: false,
+      emphasis: {
+        itemStyle: {
+          opacity: 1,
+          color: '#f80',
+          borderWidth: 1,
+          borderColor: '#fff',
+        },
+      },
     },
   };
 
+  private readonly data = computed(() => this.buildChartData());
+
   protected readonly updateOptions = computed<EChartsOption>(() => ({
-    series: { data: this.buildChartPoints() },
+    series: { data: this.data().map((d) => [d.distance, d.elevation]) },
   }));
 
-  private buildChartPoints(): [number, number][] {
-    const points: [number, number][] = [];
+  private buildChartData(): DataPoint[] {
+    const points: DataPoint[] = [];
     let totalDistance = 0;
 
     for (const segment of this.route().segments) {
@@ -129,11 +154,67 @@ export class HeightMap {
         if (prevNode) {
           totalDistance += haversine(prevNode.asLngLat(), node.asLngLat());
         }
-        points.push([totalDistance, node.elevation]);
+        points.push({
+          distance: totalDistance,
+          elevation: node.elevation,
+          position: node.position,
+        });
         prevNode = node;
       }
     }
 
     return points;
+  }
+
+  protected onChartInit(chart: EChartsType): void {
+    this.chart = chart;
+
+    this.chart.getZr().on('mousemove', (e) => this.updateMarker(e));
+    this.chart.getZr().on('mouseout', () => this.clearMarker());
+  }
+
+  protected updateMarker(e: ElementEvent): void {
+    if (!this.chart) return;
+
+    const gridPoint = [e.offsetX, e.offsetY];
+    const seriesPoint = this.chart.convertFromPixel('grid', gridPoint);
+    const distance = seriesPoint[0];
+    const idx = this.findClosestIndex(this.data(), distance);
+    const targetItem = this.data().at(idx);
+
+    if (!targetItem) return console.warn(`No valid data point found for distance ${distance}!`);
+    this.mapLayers.setLayerData(this.map.getActiveMap(), LayerIds.CHART_MARKER, {
+      type: 'Point',
+      coordinates: targetItem.position,
+    });
+  }
+
+  private findClosestIndex(data: DataPoint[], target: number): number {
+    if (data.length == 0) return -1;
+
+    let low = 0;
+    let high = data.length - 1;
+
+    while (low < high) {
+      const mid = Math.floor((low + high) / 2);
+      if (data[mid].distance < target) {
+        low = mid + 1;
+      } else {
+        high = mid;
+      }
+    }
+
+    // Check if the previous neighbor is actually closer
+    if (
+      low > 0 &&
+      Math.abs(data[low].distance - target) > Math.abs(data[low - 1].distance - target)
+    ) {
+      return low - 1;
+    }
+    return low;
+  }
+
+  protected clearMarker(): void {
+    this.mapLayers.removeLayerData(this.map.getActiveMap(), LayerIds.CHART_MARKER);
   }
 }

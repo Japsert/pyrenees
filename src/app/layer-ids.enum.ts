@@ -5,4 +5,5 @@ export enum LayerIds {
   ROUTE_LINE = 'route-line',
   ROUTE_LINE_HITBOX = 'route-line-hitbox',
   WAYPOINTS = 'waypoints',
+  CHART_MARKER = 'chart-marker',
 }

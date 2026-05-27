@@ -1,1 +1,9 @@
-<div echarts [initOpts]="initOptions" [options]="options" [merge]="updateOptions()" [autoResize]="true" class="w-full h-full"></div>
+<div
+  echarts
+  [initOpts]="initOptions"
+  [options]="options"
+  [merge]="updateOptions()"
+  [autoResize]="true"
+  (chartInit)="onChartInit($event)"
+  class="w-full h-full"
+></div>
