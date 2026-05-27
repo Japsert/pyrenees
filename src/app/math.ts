@@ -1,3 +1,5 @@
+import { Map as MapboxMap } from "mapbox-gl";
+
 function cubicBezier(t: number, p1x: number, p1y: number, p2x: number, p2y: number): number {
   // Newton's method to solve for t given x, then evaluate y
   const cx = 3 * p1x,
@@ -31,4 +33,33 @@ export function ease(t: number): number {
 
 export function generateId(): string {
   return Math.random().toString(36).slice(2, 8);
+}
+
+// moving average function, yanked from sma npm package
+export function sma(data: number[], window: number): number[] {
+  const padding = Math.floor(window / 2);
+  // Pad array to maintain original length
+  const padded = [
+    ...new Array(padding).fill(data[0]),
+    ...data,
+    ...new Array(padding).fill(data.at(-1)),
+  ];
+
+  const result: number[] = [];
+  for (let i = window; i <= padded.length; i++) {
+    const slice = padded.slice(i - window, i);
+    const avg = slice.reduce((a, b) => a + b, 0) / window;
+    result.push(avg);
+  }
+  return result;
+}
+
+// thanks claude, wtf
+export function altitudeToZoom(map: MapboxMap, altitudeMeters: number, latitude: number): number {
+  const mapHeight = map.getCanvas().clientHeight;
+  const fov = 0.6435011087932844; // Mapbox default FOV in radians (~36.87°)
+  const cameraToCenterDistance = (0.5 / Math.tan(fov / 2)) * mapHeight;
+  const metersPerPixelAtZoom0 =
+    (2 * Math.PI * 6371008.8 * Math.cos((latitude * Math.PI) / 180)) / 512;
+  return Math.log2((cameraToCenterDistance * metersPerPixelAtZoom0) / altitudeMeters);
 }

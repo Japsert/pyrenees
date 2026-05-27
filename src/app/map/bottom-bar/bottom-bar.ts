@@ -3,6 +3,7 @@ import { RoutePlannerService } from '../../route-planner.service';
 import { StyleSwitcher } from "../style-switcher/style-switcher";
 import { HeightMap } from "./height-map/height-map";
 import { RouteInteractionService } from '../../route-interaction.service';
+import { MapService } from '../../map.service';
 
 @Component({
   selector: 'app-bottom-bar',
@@ -11,8 +12,11 @@ import { RouteInteractionService } from '../../route-interaction.service';
   styleUrl: './bottom-bar.css',
 })
 export class BottomBar {
+  private readonly map = inject(MapService);
   protected readonly routeInteraction = inject(RouteInteractionService);
   private readonly routePlanner = inject(RoutePlannerService);
+
+  protected isFlying = false;
   
   private readonly route = this.routePlanner.route;
   private readonly routeStats = computed(() => this.route().getStats());
@@ -23,4 +27,10 @@ export class BottomBar {
   protected readonly timeM = computed(() =>
     Math.trunc(((this.routeStats()?.time ?? 0) % 3600) / 60),
   );
+
+  toggleFly(): void {
+    if (this.isFlying) this.map.cancelFly();
+    else this.map.fly();
+    this.isFlying = !this.isFlying;
+  }
 }

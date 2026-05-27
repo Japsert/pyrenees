@@ -9,13 +9,26 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../environments/environment';
-import { GeoJSONSource, Map as MapboxMap, NavigationControl, ScaleControl } from 'mapbox-gl';
+import {
+  GeoJSONSource,
+  Map as MapboxMap,
+  NavigationControl,
+  PaddingOptions,
+  ScaleControl,
+} from 'mapbox-gl';
 import { MapStyle } from './style.enum';
 import { RouteControl } from './map/route-control/route-control';
 import { RoutePlannerService } from './route-planner.service';
 import { Route } from './route/route';
 import { MapLayersService } from './map-layers.service';
 import { RouteInteractionService } from './route-interaction.service';
+import { FlyoverService } from './flyover.service';
+
+export const BOTTOM_BAR_HEIGHT_PX = 128;
+export const BOTTOM_BAR_PADDING_PX = 32;
+export const FLY_TO_BOTTOM_PADDING: PaddingOptions = {
+  bottom: BOTTOM_BAR_HEIGHT_PX + 2 * BOTTOM_BAR_PADDING_PX,
+};
 
 @Injectable({
   providedIn: 'root',
@@ -27,6 +40,7 @@ export class MapService {
   private readonly mapLayers = inject(MapLayersService);
   private readonly routeInteraction = inject(RouteInteractionService);
   private readonly routePlanner = inject(RoutePlannerService);
+  private readonly flyover = inject(FlyoverService);
 
   private map1Container: HTMLElement | null = null;
   private map2Container: HTMLElement | null = null;
@@ -85,10 +99,10 @@ export class MapService {
     map.addControl(new ScaleControl(), 'top-left');
   }
 
-  getActiveMap(): MapboxMap | null {
-    if (!this.map1Container?.hidden) return this.map1;
-    if (!this.map2Container?.hidden) return this.map2;
-    return null;
+  getActiveMap(): MapboxMap {
+    if (!this.map1Container?.hidden) return this.map1!;
+    if (!this.map2Container?.hidden) return this.map2!;
+    throw new Error('No active map found!');
   }
 
   destroyMaps(): void {
@@ -146,10 +160,28 @@ export class MapService {
     });
   }
 
-  printDebugInfo(): void {
+  debug(): void {
     console.debug(
       'rendered route:',
       this.map1?.queryRenderedFeatures({ layers: ['waypoints', 'route-line'] }),
     );
+    //console.debug(this.flyover.smoothedRoute, this.flyover.averagedRoute);
+    this.map1?.getSource<GeoJSONSource>('debug-averaged-route')!.setData(this.flyover.averagedRoute);
+    //this.map1?.getSource<GeoJSONSource>('debug-smoothed-route')!.setData(this.flyover.smoothedRoute);
+  }
+
+  canFly(): boolean {
+    return this.routePlanner.route().segments.length > 0;
+  }
+
+  fly(): void {
+    const lineString = this.routePlanner.route().toLineString();
+    this.flyover.start(this.getActiveMap(), lineString);
+    // TODO: remove
+    this.debug();
+  }
+
+  cancelFly(): void {
+    this.flyover.completeFlyover();
   }
 }

@@ -341,6 +341,14 @@ export class Route {
     }));
   }
 
+  toLineString(): LineString {
+    const tracks = this.tracksToFeatures();
+    return {
+      type: 'LineString',
+      coordinates: tracks.flatMap((track) => track.geometry.coordinates),
+    }
+  }
+
   static fromGeoJSON(fc: RouteFeatureCollection): Route {
     const route = new Route();
     try {

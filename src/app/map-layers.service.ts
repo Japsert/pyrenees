@@ -11,7 +11,8 @@ export class MapLayersService {
     this.addTrailLayers(map);
     //this.addShelterLayer(map);
     this.addRouteLayer(map);
-    this.addChartMarkerLayer(map)
+    this.addRouteDebugLayers(map);
+    this.addChartMarkerLayer(map);
     this.addEditLinesLayer(map);
     this.addDraggingCursorLayer(map);
     this.addRouteHoverCursorLayer(map);
@@ -181,6 +182,50 @@ export class MapLayersService {
       });
   }
 
+  addRouteDebugLayers(map: MapboxMap): void {
+    map
+      .addSource('debug-averaged-route', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [],
+        },
+      })
+      .addLayer({
+        id: 'debug-averaged-line',
+        type: 'line',
+        source: 'debug-averaged-route',
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+        paint: {
+          'line-color': '#00f',
+          'line-width': 3,
+        },
+      })
+      //.addSource('debug-smoothed-route', {
+      //  type: 'geojson',
+      //  data: {
+      //    type: 'FeatureCollection',
+      //    features: [],
+      //  },
+      //})
+      //.addLayer({
+      //  id: 'debug-smoothed-line',
+      //  type: 'line',
+      //  source: 'debug-smoothed-route',
+      //  layout: {
+      //    'line-cap': 'round',
+      //    'line-join': 'round',
+      //  },
+      //  paint: {
+      //    'line-color': '#0f0',
+      //    'line-width': 3,
+      //  },
+      //});
+  }
+
   addChartMarkerLayer(map: MapboxMap): void {
     map.addSource(LayerIds.CHART_MARKER, {
       type: 'geojson',
@@ -189,17 +234,20 @@ export class MapLayersService {
         features: [],
       },
     });
-    map.addLayer({
-      id: LayerIds.CHART_MARKER,
-      type: 'circle',
-      source: LayerIds.CHART_MARKER,
-      paint: {
-        'circle-radius': 4,
-        'circle-color': '#f80',
-        'circle-stroke-width': 1,
-        'circle-stroke-color': '#fff',
+    map.addLayer(
+      {
+        id: LayerIds.CHART_MARKER,
+        type: 'circle',
+        source: LayerIds.CHART_MARKER,
+        paint: {
+          'circle-radius': 4,
+          'circle-color': '#f80',
+          'circle-stroke-width': 1,
+          'circle-stroke-color': '#fff',
+        },
       },
-    }, LayerIds.WAYPOINTS);
+      LayerIds.WAYPOINTS,
+    );
   }
 
   private addEditLinesLayer(map: MapboxMap): void {

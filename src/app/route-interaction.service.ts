@@ -183,10 +183,9 @@ export class RouteInteractionService {
       });
   }
 
-  addRoutePlannerKeyboardHandlers(getActiveMap: () => MapboxMap | null): void {
+  addRoutePlannerKeyboardHandlers(getActiveMap: () => MapboxMap): void {
     globalThis.addEventListener('keydown', (e) => {
       const activeMap = getActiveMap();
-      if (!activeMap) return;
       if (e.key == 'Backspace') {
         if (!this.hasSelectedWaypoint()) return;
         this.deleteWaypoint(this.selectedWaypointId()!);

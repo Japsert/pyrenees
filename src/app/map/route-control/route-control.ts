@@ -63,7 +63,7 @@ export class RouteControlComponent {
 
   debug(): void {
     this.routePlanner.printDebugInfo();
-    this.map.printDebugInfo();
+    this.map.debug();
   }
 
   export(): void {

@@ -1,5 +1,18 @@
 @import 'tailwindcss';
 
+@theme {
+  --color-route: #ffaa00;
+  --color-route-hover: #ff6600;
+  --color-route-select: #ff3300;
+  --inset-shadow-hover: inset 0 0 6px 5px var(--color-orange-100);
+  --inset-shadow-active: inset 0 0 10px 5px var(--color-orange-400);
+  --inset-shadow-flying: inset 0 0 6px 5px var(--color-orange-300);
+  --inset-shadow-flying-hover: inset 0 0 8px 5px var(--color-orange-400);
+  --inset-shadow-flying-active: inset 0 0 10px 5px var(--color-orange-500);
+  --bottom-bar-height: 128px;
+  --bottom-bar-margin-b: 8px;
+}
+
 html, body {
   margin: 0;
   padding: 0;
