@@ -177,11 +177,9 @@ export class MapService {
   fly(): void {
     const lineString = this.routePlanner.route().toLineString();
     this.flyover.start(this.getActiveMap(), lineString);
-    // TODO: remove
-    this.debug();
   }
 
   cancelFly(): void {
-    this.flyover.completeFlyover();
+    this.flyover.completeFlyover(true);
   }
 }
