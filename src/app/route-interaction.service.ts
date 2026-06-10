@@ -34,6 +34,8 @@ export class RouteInteractionService {
   readonly isOverLine = signal<boolean>(false);
   readonly isOverWaypoint = signal<boolean>(false);
 
+  readonly routeHoverIdx = signal<number | null>(null);
+
   //#endregion
   //#region Public API
 
@@ -81,7 +83,7 @@ export class RouteInteractionService {
         const waypointId = (e.features?.at(0)?.properties as WaypointProperties).id;
         this.hoveredWaypointId.set(waypointId);
         this.isOverWaypoint.set(true);
-        this.updateLineHover(map);
+        this.updateLineHover(map, e.lngLat);
         if (!this.hoverProgress.has(waypointId)) this.hoverProgress.set(waypointId, 0);
         this.animateHover(map, waypointId, true);
       })
@@ -92,7 +94,7 @@ export class RouteInteractionService {
           this.beginDraggingWaypoint(map, this.mayDragWaypointId()!, e.lngLat);
         this.mayDragWaypointId.set(null);
         this.isOverWaypoint.set(false);
-        this.updateLineHover(map);
+        this.updateLineHover(map, e.lngLat);
         if (!this.isHoveringWaypoint()) return;
         this.animateHover(map, this.hoveredWaypointId()!, false);
         this.hoveredWaypointId.set(null);
@@ -127,17 +129,17 @@ export class RouteInteractionService {
         // if not dragging wp, if not hovering wp, make bigger, render transparent marker at cursor
         if (this.isDraggingWaypoint()) return;
         this.isOverLine.set(true);
-        this.updateLineHover(map);
+        this.updateLineHover(map, e.lngLat);
         this.mapLayers.setLayerData(map, LayerIds.ROUTE_HOVER_CURSOR, {
           type: 'Point',
           coordinates: [e.lngLat.lng, e.lngLat.lat],
         });
       })
-      .on('mouseleave', LayerIds.ROUTE_LINE_HITBOX, () => {
+      .on('mouseleave', LayerIds.ROUTE_LINE_HITBOX, (e) => {
         // if not dragging wp, if not hovering wp, make smaller, stop rendering transparent marker
         if (this.isDraggingWaypoint()) return;
         this.isOverLine.set(false);
-        this.updateLineHover(map);
+        this.updateLineHover(map, e.lngLat);
         this.mapLayers.removeLayerData(map, LayerIds.ROUTE_HOVER_CURSOR);
       })
       .on('mousedown', LayerIds.ROUTE_LINE_HITBOX, (e) => {
@@ -149,11 +151,7 @@ export class RouteInteractionService {
       .on('mousemove', LayerIds.ROUTE_LINE_HITBOX, (e) => {
         if (this.isDraggingWaypoint()) return;
         this.isOverLine.set(true);
-        this.updateLineHover(map);
-        this.mapLayers.setLayerData(map, LayerIds.ROUTE_HOVER_CURSOR, {
-          type: 'Point',
-          coordinates: [e.lngLat.lng, e.lngLat.lat],
-        });
+        this.updateLineHover(map, e.lngLat);
       })
       .on('mousemove', (e) => {
         if (this.isDraggingWaypoint()) this.updateDraggingWaypoint(map, e.lngLat);
@@ -166,7 +164,7 @@ export class RouteInteractionService {
           this.finishDraggingWaypoint(map, e.lngLat);
         }
         if (this.isDraggingSegment()) this.finishDraggingSegment(map, e.lngLat);
-        this.updateLineHover(map);
+        this.updateLineHover(map, e.lngLat);
         this.mapLayers.setLayerData(map, LayerIds.ROUTE_HOVER_CURSOR, {
           type: 'Point',
           coordinates: [e.lngLat.lng, e.lngLat.lat],
@@ -176,7 +174,7 @@ export class RouteInteractionService {
         if (draggingWaypointId) {
           this.hoveredWaypointId.set(draggingWaypointId);
           this.isOverWaypoint.set(true);
-          this.updateLineHover(map);
+          this.updateLineHover(map, e.lngLat);
           this.hoverProgress.set(draggingWaypointId, 1);
           map.setFeatureState({ source: 'route', id: draggingWaypointId }, { hoverProgress: 1 });
         }
@@ -241,15 +239,22 @@ export class RouteInteractionService {
   //#endregion
   //#region Segment hover
 
-  private updateLineHover(map: MapboxMap): void {
+  private updateLineHover(map: MapboxMap, lngLat: LngLat): void {
     if (this.isOverLine() && !this.isOverWaypoint() && !this.isDraggingWaypoint()) {
       map.setPaintProperty(LayerIds.ROUTE_LINE, 'line-width', 6);
       if (map.getLayer(LayerIds.ROUTE_HOVER_CURSOR) && !this.isDraggingSegment())
         map.setLayoutProperty(LayerIds.ROUTE_HOVER_CURSOR, 'visibility', 'visible');
+      const nearestPoint = this.routePlanner.route().nearestPointOnRoute(lngLat);
+      this.routeHoverIdx.set(nearestPoint.properties.segmentIndex);
+      this.mapLayers.setLayerData(map, LayerIds.ROUTE_HOVER_CURSOR, {
+        type: 'Point',
+        coordinates: nearestPoint.geometry.coordinates,
+      });
     } else if (!this.isDraggingSegment()) {
       map.setPaintProperty(LayerIds.ROUTE_LINE, 'line-width', 3);
       if (map.getLayer(LayerIds.ROUTE_HOVER_CURSOR))
         map.setLayoutProperty(LayerIds.ROUTE_HOVER_CURSOR, 'visibility', 'none');
+      this.routeHoverIdx.set(null);
     }
   }
 

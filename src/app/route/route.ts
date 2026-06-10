@@ -1,6 +1,7 @@
 import { Feature, FeatureCollection, LineString, Point, Position } from 'geojson';
 import { LngLat } from 'mapbox-gl';
 import { generateId } from '../math';
+import { nearestPointOnLine } from '@turf/turf';
 
 export type WaypointProperties = {
   version: number;
@@ -145,6 +146,18 @@ export type RouteFeatureCollection = FeatureCollection<
 >;
 
 export type RouteStats = SegmentInfo;
+
+export type NearestPointOnLine = Feature<
+  Point,
+  {
+    lineStringIndex: number;
+    segmentIndex: number;
+    totalDistance: number;
+    lineDistance: number;
+    segmentDistance: number;
+    pointDistance: number;
+  }
+>;
 
 export class Route {
   private static readonly VERSION: number = 5;
@@ -346,7 +359,13 @@ export class Route {
     return {
       type: 'LineString',
       coordinates: tracks.flatMap((track) => track.geometry.coordinates),
-    }
+    };
+  }
+
+  nearestPointOnRoute(lngLat: LngLat): NearestPointOnLine {
+    const line = this.toLineString();
+    const point = [lngLat.lng, lngLat.lat];
+    return nearestPointOnLine(line, point);
   }
 
   static fromGeoJSON(fc: RouteFeatureCollection): Route {

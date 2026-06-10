@@ -1,4 +1,4 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, effect } from '@angular/core';
 import haversine from 'haversine-distance';
 import { RoutePlannerService } from '../../../route-planner.service';
 import { Node } from '../../../route/route';
@@ -12,6 +12,7 @@ import { MapLayersService } from '../../../map-layers.service';
 import { MapService } from '../../../map.service';
 import { LayerIds } from '../../../layer-ids.enum';
 import { Position } from 'geojson';
+import { RouteInteractionService } from '../../../route-interaction.service';
 echarts.use([SVGRenderer, GridComponent, TooltipComponent, LineChart]);
 
 type DataPoint = {
@@ -31,6 +32,7 @@ export class HeightMap {
   private readonly map = inject(MapService);
   private readonly mapLayers = inject(MapLayersService);
   private readonly routePlanner = inject(RoutePlannerService);
+  private readonly routeInteraction = inject(RouteInteractionService);
   private readonly route = this.routePlanner.route;
 
   private chart: EChartsType | null = null;
@@ -139,6 +141,14 @@ export class HeightMap {
     series: { data: this.data().map((d) => [d.distance, d.elevation]) },
   }));
 
+  constructor() {
+    effect(() => {
+      const idx = this.routeInteraction.routeHoverIdx();
+      if (idx === null) this.clearHighlight();
+      else this.highlightPoint(idx);
+    });
+  }
+
   private buildChartData(): DataPoint[] {
     const points: DataPoint[] = [];
     let totalDistance = 0;
@@ -216,5 +226,24 @@ export class HeightMap {
 
   protected clearMarker(): void {
     this.mapLayers.removeLayerData(this.map.getActiveMap(), LayerIds.CHART_MARKER);
+  }
+
+  private highlightPoint(idx: number) {
+    if (!this.chart) return;
+    this.chart.dispatchAction({ type: 'highlight', seriesIndex: 0, dataIndex: idx });
+    this.chart.dispatchAction({ type: 'showTip', seriesIndex: 0, dataIndex: idx });
+  }
+
+  private clearHighlight() {
+    if (!this.chart) return;
+    this.chart.dispatchAction({ type: 'downplay', seriesIndex: 0 });
+    this.chart.dispatchAction({ type: 'hideTip' });
+    // hideTip doesn't hide the axisPointer line (https://github.com/apache/echarts/issues/8892)
+    // hence the below workaround
+    this.chart.dispatchAction({
+      type: 'showTip',
+      seriesIndex: 0,
+      dataIndex: -1,
+    });
   }
 }
