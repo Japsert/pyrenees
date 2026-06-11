@@ -23,6 +23,7 @@ import { Route } from './route/route';
 import { MapLayersService } from './map-layers.service';
 import { RouteInteractionService } from './route-interaction.service';
 import { FlyoverService } from './flyover.service';
+import { CursorService } from './cursor.service';
 
 export const BOTTOM_BAR_HEIGHT_PX = 128;
 export const BOTTOM_BAR_PADDING_PX = 32;
@@ -34,6 +35,8 @@ export const FLY_TO_BOTTOM_PADDING: PaddingOptions = {
   providedIn: 'root',
 })
 export class MapService {
+  private readonly cursor = inject(CursorService);
+
   activeStyle = signal<MapStyle>(MapStyle.OUTDOOR);
 
   private readonly platformId = inject(PLATFORM_ID);
@@ -72,6 +75,7 @@ export class MapService {
 
     this.map1 = this.createMap(container1, 'mapbox://styles/japsert-/cmotu1b3x007o01s67wvi4hiv');
     this.addControls(this.map1);
+    this.addMapHandlers(this.map1);
     this.routeInteraction.addRoutePlannerHandlers(this.map1);
 
     this.map1.once('load', () => {
@@ -82,6 +86,7 @@ export class MapService {
       this.map2 = this.createMap(container2, 'mapbox://styles/japsert-/cmog7wz6t000f01qwgqldfyeo');
       container2.hidden = true;
       this.addControls(this.map2);
+      this.addMapHandlers(this.map2);
       this.routeInteraction.addRoutePlannerHandlers(this.map2);
 
       this.map2.once('load', () => {
@@ -97,6 +102,11 @@ export class MapService {
     map.addControl(new NavigationControl({ visualizePitch: true }));
     map.addControl(new RouteControl(this.appRef, this.injector));
     map.addControl(new ScaleControl(), 'top-left');
+  }
+
+  private addMapHandlers(map: MapboxMap): void {
+    map.on('mousedown', () => this.cursor.set('dragging', true));
+    map.on('mouseup', () => this.cursor.set('dragging', false));
   }
 
   getActiveMap(): MapboxMap {

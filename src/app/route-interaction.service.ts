@@ -5,8 +5,8 @@ import { Position } from 'geojson';
 import { RoutePlannerService } from './route-planner.service';
 import { ease } from './math';
 import { MapLayersService } from './map-layers.service';
-import { Property } from 'csstype';
 import { LayerIds } from './layer-ids.enum';
+import { CursorService } from './cursor.service';
 
 @Injectable({
   providedIn: 'root',
@@ -14,6 +14,7 @@ import { LayerIds } from './layer-ids.enum';
 export class RouteInteractionService {
   private readonly mapLayers = inject(MapLayersService);
   private readonly routePlanner = inject(RoutePlannerService);
+  private readonly cursor = inject(CursorService);
 
   //#region State
 
@@ -79,7 +80,7 @@ export class RouteInteractionService {
       })
       .on('mouseenter', LayerIds.WAYPOINTS, (e) => {
         // if not dragging route, make wp bigger, remember that we're hovering wp
-        if (this.isDraggingSegment()) return;
+        if (this.isDraggingSegment() || this.isAddingWaypoints()) return;
         const waypointId = (e.features?.at(0)?.properties as WaypointProperties).id;
         this.hoveredWaypointId.set(waypointId);
         this.isOverWaypoint.set(true);
@@ -89,7 +90,7 @@ export class RouteInteractionService {
       })
       .on('mouseleave', LayerIds.WAYPOINTS, (e) => {
         // if not dragging route, return to original size, reset hovering wp, if potential wp drag, start dragging wp (make half transparent and render marker at cursor)
-        if (this.isDraggingSegment()) return;
+        if (this.isDraggingSegment() || this.isAddingWaypoints()) return;
         if (this.mayDragWaypoint())
           this.beginDraggingWaypoint(map, this.mayDragWaypointId()!, e.lngLat);
         this.mayDragWaypointId.set(null);
@@ -100,6 +101,7 @@ export class RouteInteractionService {
         this.hoveredWaypointId.set(null);
       })
       .on('mousedown', LayerIds.WAYPOINTS, (e) => {
+        if (this.isAddingWaypoints()) return;
         // select (make darker), potential wp drag
         e.preventDefault();
         if (!this.isHoveringWaypoint()) return console.warn('Selecting a non-hovered waypoint?');
@@ -118,7 +120,7 @@ export class RouteInteractionService {
       // Mousemove handler combined with route's below
       .on('mouseup', LayerIds.WAYPOINTS, (e) => {
         // if not dragging route, if same waypoint, cancel (potential) wp drag
-        if (this.isDraggingSegment()) return;
+        if (this.isDraggingSegment() || this.isAddingWaypoints()) return;
         const waypointId = (e.features?.at(0)?.properties as WaypointProperties).id;
         this.mayDragWaypointId.set(null);
         if (this.isDraggingWaypoint() && this.draggedWaypointId() == waypointId)
@@ -127,7 +129,7 @@ export class RouteInteractionService {
       // Mouseup handler combined with route's below
       .on('mouseenter', LayerIds.ROUTE_LINE_HITBOX, (e) => {
         // if not dragging wp, if not hovering wp, make bigger, render transparent marker at cursor
-        if (this.isDraggingWaypoint()) return;
+        if (this.isDraggingWaypoint() || this.isAddingWaypoints()) return;
         this.isOverLine.set(true);
         this.updateLineHover(map, e.lngLat);
         this.mapLayers.setLayerData(map, LayerIds.ROUTE_HOVER_CURSOR, {
@@ -137,19 +139,19 @@ export class RouteInteractionService {
       })
       .on('mouseleave', LayerIds.ROUTE_LINE_HITBOX, (e) => {
         // if not dragging wp, if not hovering wp, make smaller, stop rendering transparent marker
-        if (this.isDraggingWaypoint()) return;
+        if (this.isDraggingWaypoint() || this.isAddingWaypoints()) return;
         this.isOverLine.set(false);
         this.updateLineHover(map, e.lngLat);
         this.mapLayers.removeLayerData(map, LayerIds.ROUTE_HOVER_CURSOR);
       })
       .on('mousedown', LayerIds.ROUTE_LINE_HITBOX, (e) => {
         // if not hovering wp, start dragging route, make transparent marker opaque
-        if (this.isHoveringWaypoint()) return;
+        if (this.isHoveringWaypoint() || this.isAddingWaypoints()) return;
         e.preventDefault();
         this.beginDraggingSegment(map, e.features!, e.lngLat);
       })
       .on('mousemove', LayerIds.ROUTE_LINE_HITBOX, (e) => {
-        if (this.isDraggingWaypoint()) return;
+        if (this.isDraggingWaypoint() || this.isAddingWaypoints()) return;
         this.isOverLine.set(true);
         this.updateLineHover(map, e.lngLat);
       })
@@ -158,6 +160,7 @@ export class RouteInteractionService {
         if (this.isDraggingSegment()) this.updateDraggingSegment(map, e.lngLat);
       })
       .on('mouseup', (e) => {
+        if (this.isAddingWaypoints()) return;
         let draggingWaypointId: string | null = null;
         if (this.isDraggingWaypoint()) {
           draggingWaypointId = this.draggedWaypointId();
@@ -198,12 +201,7 @@ export class RouteInteractionService {
 
   toggleAddingWaypoints(): void {
     this.isAddingWaypoints.update((bool) => !bool);
-    // Change cursor while editing
-    this.setMapCursor(this.isAddingWaypoints() ? 'crosshair' : 'auto');
-  }
-
-  private setMapCursor(style: Property.Cursor) {
-    document.documentElement.style.setProperty('--map-cursor', style);
+    this.cursor.set('adding-waypoint', this.isAddingWaypoints());
   }
 
   //#endregion
@@ -250,11 +248,13 @@ export class RouteInteractionService {
         type: 'Point',
         coordinates: nearestPoint.geometry.coordinates,
       });
+      this.cursor.set('hovering-draggable', true);
     } else if (!this.isDraggingSegment()) {
       map.setPaintProperty(LayerIds.ROUTE_LINE, 'line-width', 3);
       if (map.getLayer(LayerIds.ROUTE_HOVER_CURSOR))
         map.setLayoutProperty(LayerIds.ROUTE_HOVER_CURSOR, 'visibility', 'none');
       this.routeHoverIdx.set(null);
+      this.cursor.set('hovering-draggable', false);
     }
   }
 
@@ -266,6 +266,7 @@ export class RouteInteractionService {
     this.draggedWaypointId.set(id);
     this.updateDraggingWaypoint(map, newPos);
     this.mapLayers.removeLayerData(map, LayerIds.DRAGGING_CURSOR);
+    this.cursor.set('dragging', true);
   }
 
   private updateDraggingWaypoint(map: MapboxMap, newPos: LngLat): void {
@@ -304,6 +305,7 @@ export class RouteInteractionService {
     this.selectedWaypointId.set(null);
     this.mapLayers.removeLayerData(map, LayerIds.EDITING_LINES);
     this.mapLayers.removeLayerData(map, LayerIds.DRAGGING_CURSOR);
+    this.cursor.set('dragging', false);
   }
 
   private cancelDraggingWaypoint(map: MapboxMap): void {
@@ -313,6 +315,7 @@ export class RouteInteractionService {
     this.selectedWaypointId.set(null);
     this.mapLayers.removeLayerData(map, LayerIds.EDITING_LINES);
     this.mapLayers.removeLayerData(map, LayerIds.DRAGGING_CURSOR);
+    this.cursor.set('dragging', false);
   }
 
   private deleteWaypoint(id: string): void {
@@ -336,6 +339,7 @@ export class RouteInteractionService {
     this.draggedSegment.set(segment);
     this.updateDraggingSegment(map, newPos);
     map.setLayoutProperty(LayerIds.ROUTE_HOVER_CURSOR, 'visibility', 'none');
+    this.cursor.set('dragging', true);
   }
 
   private updateDraggingSegment(map: MapboxMap, newPos: LngLat): void {
@@ -363,6 +367,7 @@ export class RouteInteractionService {
     this.draggedSegment.set(null);
     this.mapLayers.removeLayerData(map, LayerIds.EDITING_LINES);
     this.mapLayers.removeLayerData(map, LayerIds.DRAGGING_CURSOR);
+    this.cursor.set('dragging', false);
   }
 
   private cancelDraggingSegment(map: MapboxMap): void {
@@ -370,6 +375,7 @@ export class RouteInteractionService {
     this.mapLayers.removeLayerData(map, LayerIds.EDITING_LINES);
     this.mapLayers.removeLayerData(map, LayerIds.DRAGGING_CURSOR);
     this.mapLayers.removeLayerData(map, LayerIds.ROUTE_HOVER_CURSOR);
+    this.cursor.set('dragging', false);
   }
 
   //#endregion
