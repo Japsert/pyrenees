@@ -6,22 +6,24 @@ import {
   EnvironmentInjector,
   HostListener,
   inject,
+  signal,
 } from '@angular/core';
-import { MapService } from '../../map.service';
 import { IControl } from 'mapbox-gl';
 import { RoutePlannerService } from '../../route-planner.service';
 import { RouteInteractionService } from '../../route-interaction.service';
+import { ConfirmClearComponent } from './confirm-clear/confirm-clear.component';
 
 @Component({
   selector: 'app-route-control',
   templateUrl: './route-control.html',
+  imports: [ConfirmClearComponent],
 })
 export class RouteControlComponent {
-  private readonly map = inject(MapService);
   private readonly routeInteraction = inject(RouteInteractionService);
   private readonly routePlanner = inject(RoutePlannerService);
-  
+
   protected isEditing = this.routeInteraction.isAddingWaypoints;
+  protected showConfirmClear = signal<boolean>(false);
 
   @HostListener('document:keydown', ['$event'])
   onKeyDown(e: KeyboardEvent) {
@@ -57,13 +59,17 @@ export class RouteControlComponent {
     this.routeInteraction.toggleAddingWaypoints();
   }
 
-  clear(): void {
-    this.routePlanner.clear();
+  toggleShowConfirmClear(): void {
+    this.showConfirmClear.update(b => !b);
   }
 
-  debug(): void {
-    this.routePlanner.printDebugInfo();
-    this.map.debug();
+  clear(): void {
+    this.routePlanner.clear();
+    this.showConfirmClear.set(false);
+  }
+
+  cancelClear(): void {
+    this.showConfirmClear.set(false);
   }
 
   export(): void {
@@ -101,6 +107,6 @@ export class RouteControl implements IControl {
   onRemove(): void {
     this.appRef.detachView(this.componentRef.hostView);
     this.componentRef.destroy();
-    this.container?.parentNode?.removeChild(this.container);
+    this.container.remove();
   }
 }

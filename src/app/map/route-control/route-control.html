@@ -1,7 +1,13 @@
 <button title="Undo" (click)="undo()" [disabled]="!canUndo()">↩</button>
 <button title="Redo" (click)="redo()" [disabled]="!canRedo()">↪</button>
-<button [attr.aria-pressed]="isEditing()" title="Edit route" (click)="edit()">✏️</button>
-<button title="Clear route" (click)="clear()">🗑️</button>
-<button title="Debug" (click)="debug()">🐛</button>
+<button title="Edit route" (click)="edit()" [attr.aria-pressed]="isEditing()">✏️</button>
+<div class="relative inline-block">
+  <button title="Clear route" (click)="toggleShowConfirmClear()">🗑️</button>
+  @if (showConfirmClear()) {
+    <div class="absolute top-1/2 -translate-y-1/2 right-full mr-4">
+      <app-confirm-clear (confirmed)="clear()" (cancelled)="cancelClear()" />
+    </div>
+  }
+</div>
 <button title="Export" (click)="export()">📤</button>
 <button title="Import" (click)="import()">📥</button>

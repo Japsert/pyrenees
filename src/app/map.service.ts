@@ -170,16 +170,6 @@ export class MapService {
     });
   }
 
-  debug(): void {
-    console.debug(
-      'rendered route:',
-      this.map1?.queryRenderedFeatures({ layers: ['waypoints', 'route-line'] }),
-    );
-    //console.debug(this.flyover.smoothedRoute, this.flyover.averagedRoute);
-    this.map1?.getSource<GeoJSONSource>('debug-averaged-route')!.setData(this.flyover.averagedRoute);
-    //this.map1?.getSource<GeoJSONSource>('debug-smoothed-route')!.setData(this.flyover.smoothedRoute);
-  }
-
   canFly(): boolean {
     return this.routePlanner.route().segments.length > 0;
   }
