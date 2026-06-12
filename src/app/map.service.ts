@@ -22,7 +22,6 @@ import { RouteService } from './route.service';
 import { Route } from './route/route';
 import { MapLayersService } from './map-layers.service';
 import { RouteInteractionService } from './route-interaction.service';
-import { FlyoverService } from './flyover.service';
 import { CursorService } from './cursor.service';
 
 export const BOTTOM_BAR_HEIGHT_PX = 128;
@@ -120,15 +119,10 @@ export class MapService {
     throw new Error('No active map found!');
   }
 
-  destroyMaps(): void {
-    if (this.map1) {
-      this.map1.remove();
-      this.map1 = null;
-    }
-    if (this.map2) {
-      this.map2.remove();
-      this.map2 = null;
-    }
+  private getInactiveMap(): MapboxMap {
+    if (this.map1Container?.hidden) return this.map1!;
+    if (this.map2Container?.hidden) return this.map2!;
+    throw new Error('No inactive map found!');
   }
 
   private createMap(container: HTMLElement, style: string): MapboxMap {
@@ -146,31 +140,37 @@ export class MapService {
     });
   }
 
+  destroyMaps(): void {
+    if (this.map1) {
+      this.map1.remove();
+      this.map1 = null;
+    }
+    if (this.map2) {
+      this.map2.remove();
+      this.map2 = null;
+    }
+  }
+
   switchStyle(): void {
     this.activeStyle.update((style) =>
       style == MapStyle.OUTDOOR ? MapStyle.SATELLITE : MapStyle.OUTDOOR,
     );
-    this.syncIfActive(this.map1!, this.map2!);
-    this.syncIfActive(this.map2!, this.map1!);
+    this.sync();
     this.setStyle(this.activeStyle());
     this.getActiveMap().resize();
   }
 
   private setStyle(style: MapStyle): void {
-  if (!this.map1Container || !this.map2Container)
-    throw new Error('One of the maps not initialized yet!');
+    if (!this.map1Container || !this.map2Container)
+      throw new Error('One of the maps not initialized yet!');
 
-  this.map1Container.hidden = style == MapStyle.SATELLITE;
-  this.map2Container.hidden = style == MapStyle.OUTDOOR;
-}
-
-  private syncIfActive(source: MapboxMap, target: MapboxMap) {
-    if (source.getContainer().hidden) return;
-    this.sync(source, target);
+    this.map1Container.hidden = style == MapStyle.SATELLITE;
+    this.map2Container.hidden = style == MapStyle.OUTDOOR;
   }
 
-  private sync(source: MapboxMap, target: MapboxMap) {
-    target.jumpTo({
+  private sync() {
+    const source = this.getActiveMap();
+    this.getInactiveMap().jumpTo({
       center: source.getCenter(),
       zoom: source.getZoom(),
       pitch: source.getPitch(),
