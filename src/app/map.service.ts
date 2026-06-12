@@ -153,13 +153,16 @@ export class MapService {
     this.syncIfActive(this.map1!, this.map2!);
     this.syncIfActive(this.map2!, this.map1!);
     this.setStyle(this.activeStyle());
+    this.getActiveMap().resize();
   }
 
   private setStyle(style: MapStyle): void {
-    if (!this.map1Container || !this.map2Container) return;
-    this.map1Container.hidden = style == MapStyle.SATELLITE;
-    this.map2Container.hidden = style == MapStyle.OUTDOOR;
-  }
+  if (!this.map1Container || !this.map2Container)
+    throw new Error('One of the maps not initialized yet!');
+
+  this.map1Container.hidden = style == MapStyle.SATELLITE;
+  this.map2Container.hidden = style == MapStyle.OUTDOOR;
+}
 
   private syncIfActive(source: MapboxMap, target: MapboxMap) {
     if (source.getContainer().hidden) return;
