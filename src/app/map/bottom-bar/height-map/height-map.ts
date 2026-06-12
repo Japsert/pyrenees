@@ -25,7 +25,6 @@ type DataPoint = {
   selector: 'app-height-map',
   imports: [NgxEchartsDirective],
   templateUrl: './height-map.html',
-  styleUrl: './height-map.css',
   providers: [provideEchartsCore({ echarts })],
 })
 export class HeightMap {

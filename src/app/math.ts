@@ -53,13 +53,3 @@ export function sma(data: number[], window: number): number[] {
   }
   return result;
 }
-
-// thanks claude, wtf
-export function altitudeToZoom(map: MapboxMap, altitudeMeters: number, latitude: number): number {
-  const mapHeight = map.getCanvas().clientHeight;
-  const fov = 0.6435011087932844; // Mapbox default FOV in radians (~36.87°)
-  const cameraToCenterDistance = (0.5 / Math.tan(fov / 2)) * mapHeight;
-  const metersPerPixelAtZoom0 =
-    (2 * Math.PI * 6371008.8 * Math.cos((latitude * Math.PI) / 180)) / 512;
-  return Math.log2((cameraToCenterDistance * metersPerPixelAtZoom0) / altitudeMeters);
-}
