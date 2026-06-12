@@ -43,7 +43,6 @@ export class MapService {
   private readonly mapLayers = inject(MapLayersService);
   private readonly routeInteraction = inject(RouteInteractionService);
   private readonly routePlanner = inject(RouteService);
-  private readonly flyover = inject(FlyoverService);
 
   private map1Container: HTMLElement | null = null;
   private map2Container: HTMLElement | null = null;
@@ -109,6 +108,12 @@ export class MapService {
     map.on('mouseup', () => this.cursor.set('dragging', false));
   }
 
+  getAllMaps(): MapboxMap[] {
+    if (this.map1 === null || this.map2 === null)
+      throw new Error('One of the maps is uninitialized!');
+    return [this.map1, this.map2];
+  }
+
   getActiveMap(): MapboxMap {
     if (!this.map1Container?.hidden) return this.map1!;
     if (!this.map2Container?.hidden) return this.map2!;
@@ -168,18 +173,5 @@ export class MapService {
       pitch: source.getPitch(),
       bearing: source.getBearing(),
     });
-  }
-
-  canFly(): boolean {
-    return this.routePlanner.route().segments.length > 0;
-  }
-
-  fly(): void {
-    const lineString = this.routePlanner.route().toLineString();
-    this.flyover.start(this.getActiveMap(), lineString);
-  }
-
-  cancelFly(): void {
-    this.flyover.completeFlyover(true);
   }
 }

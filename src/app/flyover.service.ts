@@ -1,9 +1,10 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import * as turf from '@turf/turf';
 import { Feature, LineString, Position } from 'geojson';
-import { CameraOptions, LngLat, Map as MapboxMap, PaddingOptions } from 'mapbox-gl';
-import { FLY_TO_BOTTOM_PADDING } from './map.service';
+import { CameraOptions, LngLat, PaddingOptions } from 'mapbox-gl';
+import { FLY_TO_BOTTOM_PADDING, MapService } from './map.service';
 import { sma } from './math';
+import { RouteService } from './route.service';
 
 export type FlyoverOptions = {
   speedMps?: number;
@@ -17,6 +18,11 @@ export type FlyoverOptions = {
   providedIn: 'root',
 })
 export class FlyoverService {
+  private readonly map = inject(MapService);
+  private readonly routePlanner = inject(RouteService);
+
+  isFlying = signal<boolean>(false);
+
   private savedCameraPos!: CameraOptions;
   private animationFrameId: number | null = null;
   private isAnimating = false;
@@ -28,7 +34,6 @@ export class FlyoverService {
   private originalRoute!: LineString;
   averagedRoute!: Feature<LineString>;
   private totalLengthKm = 0;
-  private map!: mapboxgl.Map;
   private config!: Required<FlyoverOptions>;
 
   private readonly defaultOptions: Required<FlyoverOptions> = {
@@ -44,10 +49,14 @@ export class FlyoverService {
     },
   };
 
-  start(map: MapboxMap, routeLineString: LineString, options?: FlyoverOptions): void {
+  begin(): void {
+    const lineString = this.routePlanner.route().toLineString();
+    this.start(lineString);
+  }
+
+  start(routeLineString: LineString, options?: FlyoverOptions): void {
     if (this.isAnimating) this.stop();
 
-    this.map = map;
     this.config = { ...this.defaultOptions, ...options };
     this.isAnimating = true;
 
@@ -58,16 +67,19 @@ export class FlyoverService {
 
     if (!this.prepareRoute(routeLineString)) return;
 
-    this.map.dragPan.disable();
-    this.map.keyboard.disable();
+    this.map.getAllMaps().forEach((map) => {
+      map.dragPan.disable();
+      map.keyboard.disable();
+    });
     this.addPointerListeners();
 
     // Save camera position in case we cancel flyover later
+    const activeMap = this.map.getActiveMap();
     this.savedCameraPos = {
-      center: map.getCenter(),
-      zoom: map.getZoom(),
-      bearing: map.getBearing(),
-      pitch: map.getPitch(),
+      center: activeMap.getCenter(),
+      zoom: activeMap.getZoom(),
+      bearing: activeMap.getBearing(),
+      pitch: activeMap.getPitch(),
     };
 
     // Fly to start
@@ -77,7 +89,7 @@ export class FlyoverService {
     const [startLng, startLat] = startPoint.geometry.coordinates;
     const startLngLat = new LngLat(startLng, startLat);
 
-    this.map.flyTo({
+    this.map.getActiveMap().flyTo({
       center: startLngLat,
       duration: 1500,
       essential: true,
@@ -86,7 +98,7 @@ export class FlyoverService {
       pitch: 40,
     });
 
-    this.map.once('moveend', () => {
+    this.map.getActiveMap().once('moveend', () => {
       if (!this.isAnimating) return;
       this.animationFrameId = requestAnimationFrame((t) => this.animationLoop(t));
     });
@@ -100,6 +112,7 @@ export class FlyoverService {
     }
 
     this.removePointerListeners();
+    this.isFlying.set(false);
   }
 
   private prepareRoute(routeLineString: LineString): boolean {
@@ -166,7 +179,7 @@ export class FlyoverService {
 
     // Check if we've reached the end
     if (this.currentDistanceKm >= this.totalLengthKm) {
-      this.completeFlyover();
+      this.complete();
       return;
     }
 
@@ -175,51 +188,51 @@ export class FlyoverService {
     });
     const [lng, lat] = currentPoint.geometry.coordinates;
 
-    this.map.jumpTo({
+    this.map.getActiveMap().jumpTo({
       center: [lng, lat],
     });
 
     this.animationFrameId = requestAnimationFrame((t) => this.animationLoop(t));
   }
 
-  completeFlyover(canceled: boolean = false): void {
-    this.stop(); // This will re-enable panning
+  complete(): void {
+    this.stop();
 
     const routeBoundingBox = turf.bbox(this.originalRoute);
 
-    if (canceled) {
-      this.map.flyTo({ ...this.savedCameraPos, duration: 1000, essential: true });
-    } else {
-      this.map.fitBounds(
-        [
-          [routeBoundingBox[0], routeBoundingBox[1]],
-          [routeBoundingBox[2], routeBoundingBox[3]],
-        ],
-        {
-          padding: {
-            ...this.config.fitBoundsPadding,
-            bottom:
-              (this.config.fitBoundsPadding.bottom ?? 0) + (FLY_TO_BOTTOM_PADDING.bottom ?? 0),
-          },
-          duration: 2500,
-          pitch: 40,
-          essential: true,
+    this.map.getActiveMap().fitBounds(
+      [
+        [routeBoundingBox[0], routeBoundingBox[1]],
+        [routeBoundingBox[2], routeBoundingBox[3]],
+      ],
+      {
+        padding: {
+          ...this.config.fitBoundsPadding,
+          bottom: (this.config.fitBoundsPadding.bottom ?? 0) + (FLY_TO_BOTTOM_PADDING.bottom ?? 0),
         },
-      );
-    }
+        duration: 2500,
+        pitch: 40,
+        essential: true,
+      },
+    );
+  }
+
+  cancel(): void {
+    this.stop();
+    this.map.getActiveMap().flyTo({ ...this.savedCameraPos, duration: 1000, essential: true });
   }
 
   private addPointerListeners(): void {
-    const canvas = this.map.getCanvas();
-    canvas.addEventListener('pointerdown', this.handlePointerDown);
+    this.map
+      .getAllMaps()
+      .forEach((map) => map.getCanvas().addEventListener('pointerdown', this.handlePointerDown));
     globalThis.addEventListener('pointerup', this.handlePointerUp);
   }
 
   private removePointerListeners(): void {
-    const canvas = this.map?.getCanvas();
-    if (canvas) {
-      canvas.removeEventListener('pointerdown', this.handlePointerDown);
-    }
+    this.map
+      .getAllMaps()
+      .forEach((map) => map.getCanvas().removeEventListener('pointerdown', this.handlePointerDown));
     globalThis.removeEventListener('pointerup', this.handlePointerUp);
   }
 
@@ -230,6 +243,7 @@ export class FlyoverService {
   };
 
   private readonly handlePointerUp = () => {
+    if (!this.isUserInteracting) return;
     this.isUserInteracting = false;
     this.currentSpeedMps = 0;
   };

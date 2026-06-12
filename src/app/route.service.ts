@@ -161,10 +161,6 @@ export class RouteService {
     }
   }
 
-  printDebugInfo(): void {
-    console.debug('current route:', this.route());
-  }
-
   export(): void {
     const fc = this.route().toGeoJSON();
     const json = JSON.stringify(fc, null, 2);

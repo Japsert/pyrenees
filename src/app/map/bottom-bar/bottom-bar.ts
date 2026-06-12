@@ -2,8 +2,8 @@ import { Component, computed, inject } from '@angular/core';
 import { RouteService } from '../../route.service';
 import { StyleSwitcher } from "../style-switcher/style-switcher";
 import { HeightMap } from "./height-map/height-map";
-import { RouteInteractionService } from '../../route-interaction.service';
 import { MapService } from '../../map.service';
+import { FlyoverService } from '../../flyover.service';
 
 @Component({
   selector: 'app-bottom-bar',
@@ -13,10 +13,10 @@ import { MapService } from '../../map.service';
 })
 export class BottomBar {
   private readonly map = inject(MapService);
-  protected readonly routeInteraction = inject(RouteInteractionService);
   private readonly routePlanner = inject(RouteService);
+  private readonly flyover = inject(FlyoverService)
 
-  protected isFlying = false;
+  protected isFlying = this.flyover.isFlying;
   
   private readonly route = this.routePlanner.route;
   private readonly routeStats = computed(() => this.route().getStats());
@@ -29,8 +29,8 @@ export class BottomBar {
   );
 
   toggleFly(): void {
-    if (this.isFlying) this.map.cancelFly();
-    else this.map.fly();
-    this.isFlying = !this.isFlying;
+    if (this.isFlying()) this.flyover.cancel();
+    else this.flyover.begin();
+    this.isFlying.update(v => !v);
   }
 }
