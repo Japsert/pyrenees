@@ -52,6 +52,7 @@ export class FlyoverService {
   begin(): void {
     const lineString = this.routePlanner.route().toLineString();
     this.start(lineString);
+    this.isFlying.set(true);
   }
 
   start(routeLineString: LineString, options?: FlyoverOptions): void {
@@ -111,6 +112,10 @@ export class FlyoverService {
       this.animationFrameId = null;
     }
 
+    this.map.getAllMaps().forEach((map) => {
+      map.dragPan.enable();
+      map.keyboard.enable();
+    });
     this.removePointerListeners();
     this.isFlying.set(false);
   }
