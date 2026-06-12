@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { IControl } from 'mapbox-gl';
-import { RoutePlannerService } from '../../route-planner.service';
+import { RouteService } from '../../route.service';
 import { RouteInteractionService } from '../../route-interaction.service';
 import { ConfirmClearComponent } from './confirm-clear/confirm-clear.component';
 
@@ -20,7 +20,7 @@ import { ConfirmClearComponent } from './confirm-clear/confirm-clear.component';
 })
 export class RouteControlComponent {
   private readonly routeInteraction = inject(RouteInteractionService);
-  private readonly routePlanner = inject(RoutePlannerService);
+  private readonly routePlanner = inject(RouteService);
 
   protected isEditing = this.routeInteraction.isAddingWaypoints;
   protected showConfirmClear = signal<boolean>(false);

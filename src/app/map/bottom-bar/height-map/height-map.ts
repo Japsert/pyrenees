@@ -1,6 +1,6 @@
 import { Component, inject, computed, effect } from '@angular/core';
 import haversine from 'haversine-distance';
-import { RoutePlannerService } from '../../../route-planner.service';
+import { RouteService } from '../../../route.service';
 import { Node } from '../../../route/route';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -30,7 +30,7 @@ type DataPoint = {
 export class HeightMap {
   private readonly map = inject(MapService);
   private readonly mapLayers = inject(MapLayersService);
-  private readonly routePlanner = inject(RoutePlannerService);
+  private readonly routePlanner = inject(RouteService);
   private readonly routeInteraction = inject(RouteInteractionService);
   private readonly route = this.routePlanner.route;
 

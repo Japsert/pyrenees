@@ -1,4 +1,4 @@
-import { Map as MapboxMap } from "mapbox-gl";
+import { Map as MapboxMap } from 'mapbox-gl';
 
 function cubicBezier(t: number, p1x: number, p1y: number, p2x: number, p2y: number): number {
   // Newton's method to solve for t given x, then evaluate y

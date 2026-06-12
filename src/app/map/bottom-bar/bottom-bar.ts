@@ -1,5 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
-import { RoutePlannerService } from '../../route-planner.service';
+import { RouteService } from '../../route.service';
 import { StyleSwitcher } from "../style-switcher/style-switcher";
 import { HeightMap } from "./height-map/height-map";
 import { RouteInteractionService } from '../../route-interaction.service';
@@ -14,7 +14,7 @@ import { MapService } from '../../map.service';
 export class BottomBar {
   private readonly map = inject(MapService);
   protected readonly routeInteraction = inject(RouteInteractionService);
-  private readonly routePlanner = inject(RoutePlannerService);
+  private readonly routePlanner = inject(RouteService);
 
   protected isFlying = false;
   

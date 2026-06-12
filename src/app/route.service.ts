@@ -14,7 +14,7 @@ import {
 @Injectable({
   providedIn: 'root',
 })
-export class RoutePlannerService {
+export class RouteService {
   private readonly http = inject(HttpClient);
   private readonly BROUTER_API = 'https://brouter.de/brouter';
 

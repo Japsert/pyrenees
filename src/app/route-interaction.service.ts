@@ -2,7 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { Map as MapboxMap, LngLat, GeoJSONFeature } from 'mapbox-gl';
 import { Segment, SegmentProperties, WaypointProperties } from './route/route';
 import { Position } from 'geojson';
-import { RoutePlannerService } from './route-planner.service';
+import { RouteService } from './route.service';
 import { ease } from './math';
 import { MapLayersService } from './map-layers.service';
 import { LayerIds } from './layer-ids.enum';
@@ -13,7 +13,7 @@ import { CursorService } from './cursor.service';
 })
 export class RouteInteractionService {
   private readonly mapLayers = inject(MapLayersService);
-  private readonly routePlanner = inject(RoutePlannerService);
+  private readonly routePlanner = inject(RouteService);
   private readonly cursor = inject(CursorService);
 
   //#region State

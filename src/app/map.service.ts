@@ -18,7 +18,7 @@ import {
 } from 'mapbox-gl';
 import { MapStyle } from './style.enum';
 import { RouteControl } from './map/route-control/route-control';
-import { RoutePlannerService } from './route-planner.service';
+import { RouteService } from './route.service';
 import { Route } from './route/route';
 import { MapLayersService } from './map-layers.service';
 import { RouteInteractionService } from './route-interaction.service';
@@ -42,7 +42,7 @@ export class MapService {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly mapLayers = inject(MapLayersService);
   private readonly routeInteraction = inject(RouteInteractionService);
-  private readonly routePlanner = inject(RoutePlannerService);
+  private readonly routePlanner = inject(RouteService);
   private readonly flyover = inject(FlyoverService);
 
   private map1Container: HTMLElement | null = null;
