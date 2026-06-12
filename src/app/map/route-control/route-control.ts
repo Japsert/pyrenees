@@ -68,6 +68,11 @@ export class RouteControlComponent {
     this.showConfirmClear.set(false);
   }
 
+  @HostListener('document:mousedown')
+  onMousedownOutside() {
+    this.cancelClear();
+  }
+
   cancelClear(): void {
     this.showConfirmClear.set(false);
   }

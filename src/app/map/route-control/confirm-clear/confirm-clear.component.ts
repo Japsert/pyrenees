@@ -17,9 +17,4 @@ export class ConfirmClearComponent {
   protected cancel(): void {
     this.cancelled.emit();
   }
-
-  @HostListener('document:mousedown')
-  onMousedownOutside() {
-    this.cancelled.emit();
-  }
 }

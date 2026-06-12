@@ -1,7 +1,7 @@
 <button title="Undo" (click)="undo()" [disabled]="!canUndo()">↩</button>
 <button title="Redo" (click)="redo()" [disabled]="!canRedo()">↪</button>
 <button title="Edit route" (click)="edit()" [attr.aria-pressed]="isEditing()">✏️</button>
-<div class="relative inline-block">
+<div class="relative inline-block" (mousedown)="$event.stopPropagation()">
   <button title="Clear route" (click)="toggleShowConfirmClear()">🗑️</button>
   @if (showConfirmClear()) {
     <div class="absolute top-1/2 -translate-y-1/2 right-full mr-4">
