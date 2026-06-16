@@ -1,4 +1,5 @@
-import { Map as MapboxMap } from 'mapbox-gl';
+import { LngLat, Map as MapboxMap } from 'mapbox-gl';
+import { NearestPointOnLine } from './services';
 
 function cubicBezier(t: number, p1x: number, p1y: number, p2x: number, p2y: number): number {
   // Newton's method to solve for t given x, then evaluate y
@@ -52,4 +53,17 @@ export function sma(data: number[], window: number): number[] {
     result.push(avg);
   }
   return result;
+}
+
+export function nearestPoint<
+  T extends { nearestPoint(lngLat: LngLat): NearestPointOnLine | undefined },
+>(array: T[], lngLat: LngLat): NearestPointOnLine | undefined {
+  let min: NearestPointOnLine | undefined = undefined;
+  for (const item of array) {
+    const point = item.nearestPoint(lngLat);
+    if (point === undefined) continue;
+    if (min === undefined || point.properties.pointDistance < min.properties.pointDistance)
+      min = point;
+  }
+  return min;
 }

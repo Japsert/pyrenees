@@ -1,0 +1,62 @@
+import { FeatureCollection, LineString } from 'geojson';
+import { generateId } from '../util';
+import { Waypoint, Node } from '.';
+
+export type SegmentProperties = {
+  id: string;
+  trackElevation: number[];
+  trackTime: number[];
+} & SegmentInfo;
+
+export type SegmentInfo = {
+  readonly length: number;
+  readonly totalAscend: number;
+  readonly netAscend: number;
+  readonly time: number;
+};
+
+type BRouterGeoJSONProperties = {
+  times: number[];
+  'track-length': string;
+  'filtered ascend': string;
+  'plain-ascend': string;
+  'total-time': string;
+};
+export type BRouterFeatureCollection = FeatureCollection<LineString, BRouterGeoJSONProperties>;
+
+export class Segment {
+  private constructor(
+    readonly id: string,
+    readonly start: Waypoint,
+    readonly end: Waypoint,
+    readonly track?: readonly Node[],
+    readonly info?: SegmentInfo,
+  ) {}
+  
+  static create(start: Waypoint, end: Waypoint, id: string = generateId(), track?: readonly Node[], info?: SegmentInfo): Segment {
+    return new Segment(id, start, end, track, info);
+  }
+
+  withData(fc: BRouterFeatureCollection): Segment {
+    const feature = fc.features.at(0)!;
+    const { coordinates } = feature.geometry;
+    const p = feature.properties;
+    const times = p['times'];
+
+    const track = coordinates.map((pos, idx) => Node.create([pos[0], pos[1]], pos[2], times[idx]));
+    // '+' converts to number below
+    const info = {
+      length: +p['track-length'],
+      totalAscend: +p['filtered ascend'],
+      netAscend: +p['plain-ascend'],
+      time: +p['total-time'],
+    };
+    return new Segment(this.id, this.start, this.end, track, info);
+  }
+
+  findWaypoint(id: string): Waypoint | null {
+    if (this.start.id === id) return this.start;
+    if (this.end.id === id) return this.end;
+    return null;
+  }
+}

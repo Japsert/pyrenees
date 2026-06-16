@@ -9,9 +9,8 @@ import {
   signal,
 } from '@angular/core';
 import { IControl } from 'mapbox-gl';
-import { RouteService } from '../../route.service';
-import { RouteInteractionService } from '../../route-interaction.service';
 import { ConfirmClearComponent } from './confirm-clear/confirm-clear.component';
+import { HistoryService, InteractionService, PlannerService } from '../../services';
 
 @Component({
   selector: 'app-route-control',
@@ -19,10 +18,11 @@ import { ConfirmClearComponent } from './confirm-clear/confirm-clear.component';
   imports: [ConfirmClearComponent],
 })
 export class RouteControlComponent {
-  private readonly routeInteraction = inject(RouteInteractionService);
-  private readonly routePlanner = inject(RouteService);
+  private readonly interaction = inject(InteractionService);
+  private readonly planner = inject(PlannerService);
+  private readonly history = inject(HistoryService);
 
-  protected isEditing = this.routeInteraction.isAddingWaypoints;
+  protected isEditing = this.interaction.isAddingWaypoints;
   protected showConfirmClear = signal<boolean>(false);
 
   @HostListener('document:keydown', ['$event'])
@@ -30,41 +30,41 @@ export class RouteControlComponent {
     const modifier = e.ctrlKey || e.metaKey;
     if (!modifier) return;
 
-    if ((e.metaKey && !e.shiftKey && e.key == 'z') || (e.ctrlKey && e.key == 'z')) {
+    if ((e.metaKey && !e.shiftKey && e.key === 'z') || (e.ctrlKey && e.key === 'z')) {
       e.preventDefault();
       this.undo();
-    } else if ((e.metaKey && e.shiftKey && e.key == 'z') || (e.ctrlKey && e.key == 'y')) {
+    } else if ((e.metaKey && e.shiftKey && e.key === 'z') || (e.ctrlKey && e.key === 'y')) {
       e.preventDefault();
       this.redo();
     }
   }
 
   undo(): void {
-    this.routePlanner.undo();
+    this.history.undo();
   }
 
   redo(): void {
-    this.routePlanner.redo();
+    this.history.redo();
   }
 
   canUndo(): boolean {
-    return this.routePlanner.canUndo();
+    return this.history.canUndo();
   }
 
   canRedo(): boolean {
-    return this.routePlanner.canRedo();
+    return this.history.canRedo();
   }
 
   edit(): void {
-    this.routeInteraction.toggleAddingWaypoints();
+    this.interaction.toggleAddingWaypoints();
   }
 
   toggleShowConfirmClear(): void {
-    this.showConfirmClear.update(b => !b);
+    this.showConfirmClear.update((b) => !b);
   }
 
   clear(): void {
-    this.routePlanner.clear();
+    this.planner.clear();
     this.showConfirmClear.set(false);
   }
 
@@ -78,11 +78,11 @@ export class RouteControlComponent {
   }
 
   export(): void {
-    this.routePlanner.export();
+    this.planner.export();
   }
 
   import(): void {
-    this.routePlanner.import();
+    this.planner.import();
   }
 }
 

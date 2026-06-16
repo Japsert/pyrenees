@@ -2,9 +2,9 @@ import { inject, Injectable, signal } from '@angular/core';
 import * as turf from '@turf/turf';
 import { Feature, LineString, Position } from 'geojson';
 import { CameraOptions, LngLat, PaddingOptions } from 'mapbox-gl';
-import { FLY_TO_BOTTOM_PADDING, MapService } from './map.service';
-import { sma } from './math';
-import { RouteService } from './route.service';
+import { FLY_TO_BOTTOM_PADDING, MapService } from './map';
+import { sma } from '../util';
+import { PlannerService } from './planner';
 
 export type FlyoverOptions = {
   speedMps?: number;
@@ -19,7 +19,7 @@ export type FlyoverOptions = {
 })
 export class FlyoverService {
   private readonly map = inject(MapService);
-  private readonly routePlanner = inject(RouteService);
+  private readonly planner = inject(PlannerService);
 
   isFlying = signal<boolean>(false);
 
@@ -50,7 +50,10 @@ export class FlyoverService {
   };
 
   begin(): void {
-    const lineString = this.routePlanner.route().toLineString();
+    const selectedStage = this.planner.selectedStage;
+    if (!selectedStage)
+      throw new Error('Flyover starting but no stage is selected!');
+    const lineString = selectedStage.toLineString();
     this.start(lineString);
     this.isFlying.set(true);
   }

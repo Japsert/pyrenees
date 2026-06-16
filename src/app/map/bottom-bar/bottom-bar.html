@@ -6,6 +6,7 @@
         : 'hover:inset-shadow-hover active:inset-shadow-active'
     }}"
     (click)="toggleFly()"
+    [disabled]="this.planner.selectedStage !== null"
   >
     {{ this.isFlying() ? '🛬 Stop' : '🛫 Fly' }}
   </button>

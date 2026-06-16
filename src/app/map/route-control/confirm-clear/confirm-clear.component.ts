@@ -1,4 +1,4 @@
-import { Component, HostListener, output } from '@angular/core';
+import { Component, output } from '@angular/core';
 
 @Component({
   selector: 'app-confirm-clear',

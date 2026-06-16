@@ -1,18 +1,17 @@
 import { Component, inject, computed, effect } from '@angular/core';
 import haversine from 'haversine-distance';
-import { RouteService } from '../../../route.service';
-import { Node } from '../../../route/route';
+import { PlannerService } from '../../../services/planner';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
 import { SVGRenderer } from 'echarts/renderers';
 import { EChartsOption, EChartsType, ElementEvent } from 'echarts';
 import { GridComponent, TooltipComponent } from 'echarts/components';
 import { LineChart } from 'echarts/charts';
-import { MapLayersService } from '../../../map-layers.service';
-import { MapService } from '../../../map.service';
+import { MapLayersService } from '../../../services/map-layers';
+import { MapService } from '../../../services/map';
 import { LayerIds } from '../../../layer-ids.enum';
 import { Position } from 'geojson';
-import { RouteInteractionService } from '../../../route-interaction.service';
+import { InteractionService } from '../../../services/interaction';
 echarts.use([SVGRenderer, GridComponent, TooltipComponent, LineChart]);
 
 type DataPoint = {
@@ -29,10 +28,10 @@ type DataPoint = {
 })
 export class HeightMap {
   private readonly map = inject(MapService);
-  private readonly mapLayers = inject(MapLayersService);
-  private readonly routePlanner = inject(RouteService);
-  private readonly routeInteraction = inject(RouteInteractionService);
-  private readonly route = this.routePlanner.route;
+  private readonly layers = inject(MapLayersService);
+  private readonly planner = inject(PlannerService);
+  private readonly interaction = inject(InteractionService);
+  private readonly trip = this.planner.trip;
 
   private chart: EChartsType | null = null;
 
@@ -142,7 +141,7 @@ export class HeightMap {
 
   constructor() {
     effect(() => {
-      const idx = this.routeInteraction.routeHoverIdx();
+      const idx = this.interaction.routeHoverIdx();
       if (idx === null) this.clearHighlight();
       else this.highlightPoint(idx);
     });
@@ -152,25 +151,26 @@ export class HeightMap {
     const points: DataPoint[] = [];
     let totalDistance = 0;
 
-    for (const segment of this.route().segments) {
-      if (!segment.track) {
-        totalDistance += haversine(segment.start.asLngLat(), segment.end.asLngLat());
-        continue;
-      }
+    // TODO: add selectedRoute to TripService
+    //for (const segment of this.trip().routes()[0].stages()) {
+    //  if (!segment.track) {
+    //    totalDistance += haversine(segment.start.asLngLat(), segment.end.asLngLat());
+    //    continue;
+    //  }
 
-      let prevNode: Node | null = null;
-      for (const node of segment.track) {
-        if (prevNode) {
-          totalDistance += haversine(prevNode.asLngLat(), node.asLngLat());
-        }
-        points.push({
-          distance: totalDistance,
-          elevation: node.elevation,
-          position: node.position,
-        });
-        prevNode = node;
-      }
-    }
+    //  let prevNode: Node | null = null;
+    //  for (const node of segment.track) {
+    //    if (prevNode) {
+    //      totalDistance += haversine(prevNode.asLngLat(), node.asLngLat());
+    //    }
+    //    points.push({
+    //      distance: totalDistance,
+    //      elevation: node.elevation,
+    //      position: node.position,
+    //    });
+    //    prevNode = node;
+    //  }
+    //}
 
     return points;
   }
@@ -192,14 +192,14 @@ export class HeightMap {
     const targetItem = this.data().at(idx);
 
     if (!targetItem) return console.warn(`No valid data point found for distance ${distance}!`);
-    this.mapLayers.setLayerData(this.map.getActiveMap(), LayerIds.CHART_MARKER, {
+    this.layers.setLayerData(this.map.getActiveMap(), LayerIds.CHART_MARKER, {
       type: 'Point',
       coordinates: targetItem.position,
     });
   }
 
   private findClosestIndex(data: DataPoint[], target: number): number {
-    if (data.length == 0) return -1;
+    if (data.length === 0) return -1;
 
     let low = 0;
     let high = data.length - 1;
@@ -224,7 +224,7 @@ export class HeightMap {
   }
 
   protected clearMarker(): void {
-    this.mapLayers.removeLayerData(this.map.getActiveMap(), LayerIds.CHART_MARKER);
+    this.layers.removeLayerData(this.map.getActiveMap(), LayerIds.CHART_MARKER);
   }
 
   private highlightPoint(idx: number) {

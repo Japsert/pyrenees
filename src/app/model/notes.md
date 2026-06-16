@@ -87,3 +87,14 @@ handlers:
 - on mouseup: if dragging route, finish route drag
 
 also add a bigger, invisible route underneath the route that also listens for mouse events!
+
+## New route model
+
+I want a trip to consist of multiple independent routes. These could be alternatives for the same route or completely different hikes altogether.
+These routes should be split up into different stages, which would be completed in a day.
+One stage should be marked by waypoints, with segments inbetween.
+
+- The interface, for now, has one Trip
+- A Trip can have zero or more Routes
+- A Route can have zero or more Stages
+- A Stage can have zero or more Segments

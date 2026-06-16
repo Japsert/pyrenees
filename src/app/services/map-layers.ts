@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { GeoJSONSource, Map as MapboxMap, Popup } from 'mapbox-gl';
-import { LayerIds } from './layer-ids.enum';
+import { LayerIds } from '../layer-ids.enum';
 import { GeoJSON } from 'geojson';
 
 @Injectable({
@@ -10,94 +10,14 @@ export class MapLayersService {
   addAllLayers(map: MapboxMap): void {
     this.addTrailLayers(map);
     //this.addShelterLayer(map);
-    this.addRouteLayer(map);
-    this.addRouteDebugLayers(map);
+    //this.addRouteDebugLayers(map);
     this.addChartMarkerLayer(map);
     this.addEditLinesLayer(map);
     this.addDraggingCursorLayer(map);
     this.addRouteHoverCursorLayer(map);
   }
 
-  private addTrailLayers(map: MapboxMap): void {
-    map
-      .addSource('gr10-tileset', {
-        type: 'vector',
-        url: 'mapbox://japsert-.cmolcxvbv061n1opdqvgpna20-33hp1',
-      })
-      .addSource('gr11-tileset', {
-        type: 'vector',
-        url: 'mapbox://japsert-.cmolcxw8e09v01mk0zoifowc7-4xu85',
-      })
-      .addLayer({
-        id: 'gr10',
-        type: 'line',
-        source: 'gr10-tileset',
-        'source-layer': 'GR10',
-        paint: {
-          'line-color': 'hsl(0, 100%, 50%)',
-          'line-width': 3,
-        },
-        layout: {
-          'line-join': 'round',
-        },
-      })
-      .addLayer({
-        id: 'gr11',
-        type: 'line',
-        source: 'gr11-tileset',
-        'source-layer': 'GR11',
-        paint: {
-          'line-color': 'hsl(200, 100%, 50%)',
-          'line-width': 3,
-        },
-        layout: {
-          'line-join': 'round',
-        },
-      });
-  }
-
-  private addShelterLayer(map: MapboxMap): void {
-    map
-      .addSource('shelters-tileset', {
-        type: 'vector',
-        url: 'mapbox://japsert-.cmou6e96z02wp1mtif2jkcyz5-06exw',
-      })
-      .addLayer({
-        id: 'shelters',
-        type: 'circle',
-        source: 'shelters-tileset',
-        'source-layer': 'shelters',
-        paint: {
-          'circle-radius': 6,
-          'circle-color': '#ffcc00',
-          'circle-stroke-color': '#333',
-          'circle-stroke-width': 1,
-        },
-      })
-      .on('click', 'shelters', (e) => {
-        const feature = e.features?.[0];
-        if (!feature) return;
-
-        const props = feature.properties;
-        const coordinates = (feature.geometry as any).coordinates.slice() as [number, number];
-
-        new Popup()
-          .setLngLat(coordinates)
-          .setHTML(
-            `
-          <strong>${props?.['name'] ?? 'Unknown'}</strong><br/>
-          ${props?.['ele'] ? `Elevation: ${props['ele']}m<br/>` : ''}
-          ${props?.['capacity'] ? `Capacity: ${props['capacity']}<br/>` : ''}
-          ${props?.['website'] ? `<a href="${props['website']}" target="_blank">Website</a>` : ''}
-        `,
-          )
-          .addTo(map);
-      })
-      .on('mouseenter', 'shelters', () => (map.getCanvas().style.cursor = 'pointer'))
-      .on('mouseleave', 'shelters', () => (map.getCanvas().style.cursor = ''));
-  }
-
-  private addRouteLayer(map: MapboxMap): void {
+  addStageLayer(map: MapboxMap): void {
     map
       .addSource('route', {
         type: 'geojson',
@@ -182,6 +102,85 @@ export class MapLayersService {
       });
   }
 
+  private addTrailLayers(map: MapboxMap): void {
+    map
+      .addSource('gr10-tileset', {
+        type: 'vector',
+        url: 'mapbox://japsert-.cmolcxvbv061n1opdqvgpna20-33hp1',
+      })
+      .addSource('gr11-tileset', {
+        type: 'vector',
+        url: 'mapbox://japsert-.cmolcxw8e09v01mk0zoifowc7-4xu85',
+      })
+      .addLayer({
+        id: 'gr10',
+        type: 'line',
+        source: 'gr10-tileset',
+        'source-layer': 'GR10',
+        paint: {
+          'line-color': 'hsl(0, 100%, 50%)',
+          'line-width': 3,
+        },
+        layout: {
+          'line-join': 'round',
+        },
+      })
+      .addLayer({
+        id: 'gr11',
+        type: 'line',
+        source: 'gr11-tileset',
+        'source-layer': 'GR11',
+        paint: {
+          'line-color': 'hsl(200, 100%, 50%)',
+          'line-width': 3,
+        },
+        layout: {
+          'line-join': 'round',
+        },
+      });
+  }
+
+  private addShelterLayer(map: MapboxMap): void {
+    map
+      .addSource('shelters-tileset', {
+        type: 'vector',
+        url: 'mapbox://japsert-.cmou6e96z02wp1mtif2jkcyz5-06exw',
+      })
+      .addLayer({
+        id: 'shelters',
+        type: 'circle',
+        source: 'shelters-tileset',
+        'source-layer': 'shelters',
+        paint: {
+          'circle-radius': 6,
+          'circle-color': '#ffcc00',
+          'circle-stroke-color': '#333',
+          'circle-stroke-width': 1,
+        },
+      })
+      .on('click', 'shelters', (e) => {
+        const feature = e.features?.[0];
+        if (!feature) return;
+
+        const props = feature.properties;
+        const coordinates = (feature.geometry as any).coordinates.slice() as [number, number];
+
+        new Popup()
+          .setLngLat(coordinates)
+          .setHTML(
+            `
+          <strong>${props?.['name'] ?? 'Unknown'}</strong><br/>
+          ${props?.['ele'] ? `Elevation: ${props['ele']}m<br/>` : ''}
+          ${props?.['capacity'] ? `Capacity: ${props['capacity']}<br/>` : ''}
+          ${props?.['website'] ? `<a href="${props['website']}" target="_blank">Website</a>` : ''}
+        `,
+          )
+          .addTo(map);
+      })
+      .on('mouseenter', 'shelters', () => (map.getCanvas().style.cursor = 'pointer'))
+      .on('mouseleave', 'shelters', () => (map.getCanvas().style.cursor = ''));
+  }
+
   addRouteDebugLayers(map: MapboxMap): void {
     map
       .addSource('debug-averaged-route', {
@@ -203,27 +202,27 @@ export class MapLayersService {
           'line-color': '#00f',
           'line-width': 3,
         },
-      })
-      //.addSource('debug-smoothed-route', {
-      //  type: 'geojson',
-      //  data: {
-      //    type: 'FeatureCollection',
-      //    features: [],
-      //  },
-      //})
-      //.addLayer({
-      //  id: 'debug-smoothed-line',
-      //  type: 'line',
-      //  source: 'debug-smoothed-route',
-      //  layout: {
-      //    'line-cap': 'round',
-      //    'line-join': 'round',
-      //  },
-      //  paint: {
-      //    'line-color': '#0f0',
-      //    'line-width': 3,
-      //  },
-      //});
+      });
+    //.addSource('debug-smoothed-route', {
+    //  type: 'geojson',
+    //  data: {
+    //    type: 'FeatureCollection',
+    //    features: [],
+    //  },
+    //})
+    //.addLayer({
+    //  id: 'debug-smoothed-line',
+    //  type: 'line',
+    //  source: 'debug-smoothed-route',
+    //  layout: {
+    //    'line-cap': 'round',
+    //    'line-join': 'round',
+    //  },
+    //  paint: {
+    //    'line-color': '#0f0',
+    //    'line-width': 3,
+    //  },
+    //});
   }
 
   addChartMarkerLayer(map: MapboxMap): void {

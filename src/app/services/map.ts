@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { environment } from '../environments/environment';
+import { environment } from '../../environments/environment';
 import {
   GeoJSONSource,
   Map as MapboxMap,
@@ -16,13 +16,13 @@ import {
   PaddingOptions,
   ScaleControl,
 } from 'mapbox-gl';
-import { MapStyle } from './style.enum';
-import { RouteControl } from './map/route-control/route-control';
-import { RouteService } from './route.service';
-import { Route } from './route/route';
-import { MapLayersService } from './map-layers.service';
-import { RouteInteractionService } from './route-interaction.service';
-import { CursorService } from './cursor.service';
+import { MapStyle } from '../style.enum';
+import { RouteControl } from '../map/route-control/route-control';
+import { PlannerService } from './planner';
+import { MapLayersService } from './map-layers';
+import { InteractionService } from './interaction';
+import { CursorService } from './cursor';
+import { Route, Stage } from '../model';
 
 export const BOTTOM_BAR_HEIGHT_PX = 128;
 export const BOTTOM_BAR_PADDING_PX = 32;
@@ -34,14 +34,13 @@ export const FLY_TO_BOTTOM_PADDING: PaddingOptions = {
   providedIn: 'root',
 })
 export class MapService {
-  private readonly cursor = inject(CursorService);
-
   activeStyle = signal<MapStyle>(MapStyle.OUTDOOR);
 
   private readonly platformId = inject(PLATFORM_ID);
-  private readonly mapLayers = inject(MapLayersService);
-  private readonly routeInteraction = inject(RouteInteractionService);
-  private readonly routePlanner = inject(RouteService);
+  private readonly layers = inject(MapLayersService);
+  private readonly interaction = inject(InteractionService);
+  private readonly planner = inject(PlannerService);
+  private readonly cursor = inject(CursorService);
 
   private map1Container: HTMLElement | null = null;
   private map2Container: HTMLElement | null = null;
@@ -52,16 +51,24 @@ export class MapService {
   private readonly injector = inject(EnvironmentInjector);
 
   constructor() {
+    // Update rendered stage data when stage updates
     effect(() => {
-      // Call updateRouteData when route changes
-      const route = this.routePlanner.route();
-      if (this.map1) this.updateRouteData(this.map1, route);
-      if (this.map2) this.updateRouteData(this.map2, route);
+      const routes = this.planner.trip().routes();
+      routes.forEach((route) => this.watchRoute(route));
     });
   }
 
-  updateRouteData(map: MapboxMap, route: Route): void {
-    map.getSource<GeoJSONSource>('route')?.setData(route.toGeoJSON());
+  private watchRoute(route: Route): void {
+    effect(() => {
+      const stages = route.stages();
+      stages.forEach((stage) => this.updateStageData(stage));
+    });
+  }
+
+  updateStageData(stage: Stage): void {
+    this.getAllMaps().forEach((map) =>
+      map.getSource<GeoJSONSource>(stage.sourceId)?.setData(stage.toGeoJson()),
+    );
   }
 
   async initMaps(container1: HTMLElement, container2: HTMLElement): Promise<void> {
@@ -74,25 +81,40 @@ export class MapService {
     this.map1 = this.createMap(container1, 'mapbox://styles/japsert-/cmotu1b3x007o01s67wvi4hiv');
     this.addControls(this.map1);
     this.addMapHandlers(this.map1);
-    this.routeInteraction.addRoutePlannerHandlers(this.map1);
+    this.interaction.addPlannerHandlers(this.map1);
 
     this.map1.once('load', () => {
-      this.mapLayers.addAllLayers(this.map1!);
-      this.updateRouteData(this.map1!, this.routePlanner.route());
+      this.layers.addAllLayers(this.map1!);
+      // TODO: this.mapLayers.addStageLayer(...);
 
       container2.hidden = false;
       this.map2 = this.createMap(container2, 'mapbox://styles/japsert-/cmog7wz6t000f01qwgqldfyeo');
       container2.hidden = true;
       this.addControls(this.map2);
       this.addMapHandlers(this.map2);
-      this.routeInteraction.addRoutePlannerHandlers(this.map2);
+      this.interaction.addPlannerHandlers(this.map2);
 
       this.map2.once('load', () => {
-        this.mapLayers.addAllLayers(this.map2!);
-        this.updateRouteData(this.map2!, this.routePlanner.route());
+        this.layers.addAllLayers(this.map2!);
+        // TODO: this.mapLayers.addStageLayer(...);
 
-        this.routeInteraction.addRoutePlannerKeyboardHandlers(() => this.getActiveMap());
+        this.interaction.addRoutePlannerKeyboardHandlers(() => this.getActiveMap());
       });
+    });
+  }
+
+  private createMap(container: HTMLElement, style: string): MapboxMap {
+    return new MapboxMap({
+      accessToken: environment.MAPBOX_ACCESS_KEY,
+      container,
+      style,
+      hash: true,
+      attributionControl: false,
+      logoPosition: 'top-right',
+      pitchRotateKey: 'Meta',
+      center: [0.005708026821338308, 42.68359109598495],
+      zoom: 11,
+      pitch: 40,
     });
   }
 
@@ -125,21 +147,6 @@ export class MapService {
     throw new Error('No inactive map found!');
   }
 
-  private createMap(container: HTMLElement, style: string): MapboxMap {
-    return new MapboxMap({
-      accessToken: environment.MAPBOX_ACCESS_KEY,
-      container,
-      style,
-      hash: true,
-      attributionControl: false,
-      logoPosition: 'top-right',
-      pitchRotateKey: 'Meta',
-      center: [0.005708026821338308, 42.68359109598495],
-      zoom: 11,
-      pitch: 40,
-    });
-  }
-
   destroyMaps(): void {
     if (this.map1) {
       this.map1.remove();
@@ -153,7 +160,7 @@ export class MapService {
 
   switchStyle(): void {
     this.activeStyle.update((style) =>
-      style == MapStyle.OUTDOOR ? MapStyle.SATELLITE : MapStyle.OUTDOOR,
+      style === MapStyle.OUTDOOR ? MapStyle.SATELLITE : MapStyle.OUTDOOR,
     );
     this.sync();
     this.setStyle(this.activeStyle());
@@ -164,8 +171,8 @@ export class MapService {
     if (!this.map1Container || !this.map2Container)
       throw new Error('One of the maps not initialized yet!');
 
-    this.map1Container.hidden = style == MapStyle.SATELLITE;
-    this.map2Container.hidden = style == MapStyle.OUTDOOR;
+    this.map1Container.hidden = style === MapStyle.SATELLITE;
+    this.map2Container.hidden = style === MapStyle.OUTDOOR;
   }
 
   private sync() {

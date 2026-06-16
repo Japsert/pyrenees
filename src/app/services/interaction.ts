@@ -1,19 +1,19 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Map as MapboxMap, LngLat, GeoJSONFeature } from 'mapbox-gl';
-import { Segment, SegmentProperties, WaypointProperties } from './route/route';
 import { Position } from 'geojson';
-import { RouteService } from './route.service';
-import { ease } from './math';
-import { MapLayersService } from './map-layers.service';
-import { LayerIds } from './layer-ids.enum';
-import { CursorService } from './cursor.service';
+import { PlannerService } from './planner';
+import { ease } from '../util';
+import { MapLayersService } from './map-layers';
+import { LayerIds } from '../layer-ids.enum';
+import { CursorService } from './cursor';
+import { Segment, WaypointProperties, SegmentProperties } from '../model';
 
 @Injectable({
   providedIn: 'root',
 })
-export class RouteInteractionService {
+export class InteractionService {
   private readonly mapLayers = inject(MapLayersService);
-  private readonly routePlanner = inject(RouteService);
+  private readonly planner = inject(PlannerService);
   private readonly cursor = inject(CursorService);
 
   //#region State
@@ -54,7 +54,7 @@ export class RouteInteractionService {
    *         -> mouseup (stop drag)
    *       -> mouseup (stop drag)
    */
-  addRoutePlannerHandlers(map: MapboxMap): void {
+  addPlannerHandlers(map: MapboxMap): void {
     map
       .on('click', (e) => {
         // on click: if adding wps, add wp, deselect wp unless clicking an existing waypoint
@@ -64,13 +64,13 @@ export class RouteInteractionService {
           let newPos: Position;
           if (clickedWaypoint) {
             const id = (clickedWaypoint.properties as WaypointProperties).id;
-            newPos = this.routePlanner.findWaypoint(id)!.position;
+            newPos = this.planner.findWaypointById(id)!.position;
           } else {
             newPos = [e.lngLat.lng, e.lngLat.lat];
           }
-          this.routePlanner.newWaypoint(newPos);
+          this.planner.addWaypoint(newPos);
         }
-        if (clickedWaypoint == null) {
+        if (clickedWaypoint === null) {
           map.setFeatureState(
             { source: 'route', id: this.selectedWaypointId()! },
             { selected: false },
@@ -123,7 +123,7 @@ export class RouteInteractionService {
         if (this.isDraggingSegment() || this.isAddingWaypoints()) return;
         const waypointId = (e.features?.at(0)?.properties as WaypointProperties).id;
         this.mayDragWaypointId.set(null);
-        if (this.isDraggingWaypoint() && this.draggedWaypointId() == waypointId)
+        if (this.isDraggingWaypoint() && this.draggedWaypointId() === waypointId)
           this.cancelDraggingWaypoint(map);
       })
       // Mouseup handler combined with route's below
@@ -187,13 +187,13 @@ export class RouteInteractionService {
   addRoutePlannerKeyboardHandlers(getActiveMap: () => MapboxMap): void {
     globalThis.addEventListener('keydown', (e) => {
       const activeMap = getActiveMap();
-      if (e.key == 'Backspace') {
+      if (e.key === 'Backspace') {
         if (!this.hasSelectedWaypoint()) return;
         this.deleteWaypoint(this.selectedWaypointId()!);
-      } else if (e.key == 'Escape') {
+      } else if (e.key === 'Escape') {
         if (this.isDraggingSegment()) this.cancelDraggingSegment(activeMap);
         if (this.isDraggingWaypoint()) this.cancelDraggingWaypoint(activeMap);
-      } else if (e.key == 'e') {
+      } else if (e.key === 'e') {
         this.toggleAddingWaypoints();
       }
     });
@@ -240,14 +240,24 @@ export class RouteInteractionService {
   private updateLineHover(map: MapboxMap, lngLat: LngLat): void {
     if (this.isOverLine() && !this.isOverWaypoint() && !this.isDraggingWaypoint()) {
       map.setPaintProperty(LayerIds.ROUTE_LINE, 'line-width', 6);
+
       if (map.getLayer(LayerIds.ROUTE_HOVER_CURSOR) && !this.isDraggingSegment())
         map.setLayoutProperty(LayerIds.ROUTE_HOVER_CURSOR, 'visibility', 'visible');
-      const nearestPoint = this.routePlanner.route().nearestPointOnRoute(lngLat);
-      this.routeHoverIdx.set(nearestPoint.properties.segmentIndex);
+
+      const nearestPoint = this.planner.nearestPoint(lngLat);
+      let dragCursorCoordinates;
+      if (nearestPoint === undefined) {
+        console.error('Nearest point on line not found!');
+        dragCursorCoordinates = [lngLat.lng, lngLat.lat];
+      } else {
+        this.routeHoverIdx.set(nearestPoint.properties.segmentIndex);
+        dragCursorCoordinates = nearestPoint.geometry.coordinates;
+      }
       this.mapLayers.setLayerData(map, LayerIds.ROUTE_HOVER_CURSOR, {
         type: 'Point',
-        coordinates: nearestPoint.geometry.coordinates,
+        coordinates: dragCursorCoordinates,
       });
+
       this.cursor.set('hovering-draggable', true);
     } else if (!this.isDraggingSegment()) {
       map.setPaintProperty(LayerIds.ROUTE_LINE, 'line-width', 3);
@@ -271,11 +281,11 @@ export class RouteInteractionService {
 
   private updateDraggingWaypoint(map: MapboxMap, newPos: LngLat): void {
     if (!this.isDraggingWaypoint()) return console.error('No waypoint is being dragged');
-    const prevSegment = this.routePlanner.findSegment(
-      (segment) => segment.end.id == this.draggedWaypointId(),
+    const prevSegment = this.planner.findSegment(
+      (segment) => segment.end.id === this.draggedWaypointId(),
     );
-    const nextSegment = this.routePlanner.findSegment(
-      (segment) => segment.start.id == this.draggedWaypointId(),
+    const nextSegment = this.planner.findSegment(
+      (segment) => segment.start.id === this.draggedWaypointId(),
     );
     const coordinates = [];
     if (prevSegment) coordinates.push(prevSegment.start.position);
@@ -297,7 +307,7 @@ export class RouteInteractionService {
       return console.error('finishDraggingWaypoint called but no waypoint is being dragged');
 
     const newPos: Position = [lngLat.lng, lngLat.lat];
-    this.routePlanner.moveWaypoint(this.draggedWaypointId()!, newPos);
+    this.planner.moveWaypoint(this.draggedWaypointId()!, newPos);
 
     map.setFeatureState({ source: 'route', id: this.draggedWaypointId()! }, { dragging: false });
     map.setFeatureState({ source: 'route', id: this.draggedWaypointId()! }, { selected: false });
@@ -319,7 +329,7 @@ export class RouteInteractionService {
   }
 
   private deleteWaypoint(id: string): void {
-    this.routePlanner.deleteWaypoint(id);
+    this.planner.deleteWaypoint(id);
     this.isOverWaypoint.set(false);
     this.hoveredWaypointId.set(null);
     this.selectedWaypointId.set(null);
@@ -334,8 +344,8 @@ export class RouteInteractionService {
     newPos: LngLat,
   ): void {
     const segmentId = (features.at(0)!.properties! as SegmentProperties).id;
-    const segment = this.routePlanner.route().segments.find((s) => s.id == segmentId);
-    if (!segment) return console.error('Could not find segment for dragging');
+    const segment = this.planner.findSegment((s) => s.id === segmentId);
+    if (segment === null) return console.error('Could not find segment for dragging');
     this.draggedSegment.set(segment);
     this.updateDraggingSegment(map, newPos);
     map.setLayoutProperty(LayerIds.ROUTE_HOVER_CURSOR, 'visibility', 'none');
@@ -362,7 +372,7 @@ export class RouteInteractionService {
     if (!this.draggedSegment()) return console.error('No segment is being dragged');
 
     const newPos: Position = [lngLat.lng, lngLat.lat];
-    this.routePlanner.splitSegment(this.draggedSegment()!, newPos);
+    this.planner.splitSegment(this.draggedSegment()!, newPos);
 
     this.draggedSegment.set(null);
     this.mapLayers.removeLayerData(map, LayerIds.EDITING_LINES);

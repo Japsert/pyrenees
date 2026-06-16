@@ -6,7 +6,7 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
-import { MapService } from '../map.service';
+import { MapService } from '../services/map';
 import { BottomBar } from "./bottom-bar/bottom-bar";
 
 @Component({
