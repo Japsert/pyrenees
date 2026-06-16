@@ -1,0 +1,9 @@
+<div
+  contenteditable
+  [textContent]="text()"
+  #el
+  (input)="onInput(el)"
+  (keydown.enter)="$event.preventDefault()"
+  [attr.data-placeholder]="placeholder()"
+  class="hover:cursor-text"
+></div>

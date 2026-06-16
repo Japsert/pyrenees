@@ -46,6 +46,10 @@ export class Trip {
     return nearestPoint(this.routes(), lngLat);
   }
 
+  hasRoutes(): boolean {
+    return this.routes().length !== 0;
+  }
+
   toJson(): TripData {
     return { version: Trip.VERSION, routes: this.routes().map((route) => route.toJson()) };
   }

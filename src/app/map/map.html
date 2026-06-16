@@ -1,3 +1,8 @@
 <div #map1Container id="map1-container"></div>
 <div #map2Container id="map2-container"></div>
-<app-bottom-bar class="absolute bottom-(--bottom-bar-margin-b) left-2 right-2 h-(--bottom-bar-height) flex gap-2" />
+<div class="absolute bottom-0 w-full flex flex-col">
+  <app-trip-bar class="ml-2 mr-2 h-(--trip-bar-height) w-min" />
+  <app-bottom-bar
+    class="relative m-(--bottom-bar-margin) h-(--bottom-bar-height) flex gap-2"
+  />
+</div>

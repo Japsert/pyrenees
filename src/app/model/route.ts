@@ -14,7 +14,15 @@ export class Route {
     readonly name: string,
     readonly stages: Signal<Stage[]>,
   ) {}
-  
+
+  static create(): Route {
+    return new Route('', signal([]));
+  }
+
+  withName(name: string): Route {
+    return new Route(name, this.stages);
+  }
+
   findWaypointById(id: string): Waypoint | null {
     for (const stage of this.stages()) {
       const waypoint = stage.findWaypointById(id);

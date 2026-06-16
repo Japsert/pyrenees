@@ -10,6 +10,7 @@ import {
   Waypoint,
   VersionMismatchError,
   TripData,
+  Route,
 } from '../model';
 import { HistoryService } from './history';
 import { LngLat } from 'mapbox-gl';
@@ -35,6 +36,7 @@ export class PlannerService {
   private readonly history: HistoryService<Trip> = inject(HistoryService);
 
   trip = this.history.current;
+  selectedRoute: Route | null = null;
   selectedStage: Stage | null = null;
   private readonly apiCall = new Subject<{ stage: Stage; segment: Segment }>();
 
@@ -73,6 +75,13 @@ export class PlannerService {
   }
 
   //#region Editing
+  
+  updateRoute(route: Route, func: (route: Route) => Route): void {
+    this.history.commit();
+    const newRoute = func(route);
+    this.selectedRoute = newRoute;
+    this.save();
+  }
 
   private updateSelectedStage<T>(func: (stage: Stage) => [Stage, T]): T {
     if (this.selectedStage === null)
@@ -129,6 +138,10 @@ export class PlannerService {
     );
     this.routeSegment(this.selectedStage, prevSegment);
     this.routeSegment(this.selectedStage, nextSegment);
+  }
+
+  hasRoutes(): boolean {
+    return this.trip().hasRoutes();
   }
 
   clear(): void {

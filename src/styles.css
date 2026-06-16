@@ -10,7 +10,8 @@
   --inset-shadow-flying-hover: inset 0 0 8px 5px var(--color-orange-400);
   --inset-shadow-flying-active: inset 0 0 10px 5px var(--color-orange-500);
   --bottom-bar-height: 128px;
-  --bottom-bar-margin-b: 8px;
+  --bottom-bar-margin: 8px;
+  --trip-bar-height: 52px;
 }
 
 html, body {
