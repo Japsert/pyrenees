@@ -39,49 +39,53 @@ export class RouteControlComponent {
     }
   }
 
-  undo(): void {
+  protected undo(): void {
     this.history.undo();
   }
 
-  redo(): void {
+  protected redo(): void {
     this.history.redo();
   }
 
-  canUndo(): boolean {
+  protected canUndo(): boolean {
     return this.history.canUndo();
   }
 
-  canRedo(): boolean {
+  protected canRedo(): boolean {
     return this.history.canRedo();
   }
 
-  edit(): void {
+  protected edit(): void {
     this.interaction.toggleAddingWaypoints();
   }
 
-  toggleShowConfirmClear(): void {
+  protected toggleShowConfirmClear(): void {
     this.showConfirmClear.update((b) => !b);
   }
 
-  clear(): void {
+  canClear(): boolean {
+    return !this.planner.hasRoutes();
+  }
+
+  protected clear(): void {
     this.planner.clear();
     this.showConfirmClear.set(false);
   }
 
   @HostListener('document:mousedown')
-  onMousedownOutside() {
+  protected onMousedownOutside() {
     this.cancelClear();
   }
 
-  cancelClear(): void {
+  protected cancelClear(): void {
     this.showConfirmClear.set(false);
   }
 
-  export(): void {
+  protected export(): void {
     this.planner.export();
   }
 
-  import(): void {
+  protected import(): void {
     this.planner.import();
   }
 }
