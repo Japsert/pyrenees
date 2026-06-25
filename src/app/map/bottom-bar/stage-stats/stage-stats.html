@@ -1,0 +1,25 @@
+<div class="h-full grid grid-cols-[max-content_max-content] grid-rows-4 gap-2 p-4">
+  <div class="stat-key">length</div>
+  <div class="stat-value">
+    {{ length() }}
+    <span class="unit"> km</span>
+  </div>
+  <div class="stat-key">total asc.</div>
+  <div class="stat-value">
+    {{ totalAscent() }}
+    <span class="unit"> m</span>
+  </div>
+  <div class="stat-key">net asc.</div>
+  <div class="stat-value">
+    {{ netAscent() }}
+    <span class="unit"> m</span>
+  </div>
+  <div class="stat-key">time</div>
+  <div class="stat-value">
+    <span class="stat-value">{{ timeH() }}</span>
+    <span class="unit">h</span>
+    <span class="inline-block w-1"></span>
+    <span class="stat-value">{{ timeM() }}</span>
+    <span class="unit">m</span>
+  </div>
+</div>

@@ -3,8 +3,8 @@ import { Map as MapboxMap, LngLat, GeoJSONFeature } from 'mapbox-gl';
 import { Position } from 'geojson';
 import { PlannerService } from './planner';
 import { ease } from '../util';
-import { MapLayersService } from './map-layers';
-import { LayerIds } from '../layer-ids.enum';
+import { MapLayersService } from './layers';
+import { LayerIds, SourceIds } from '../ids.enum';
 import { CursorService } from './cursor';
 import { Segment, WaypointProperties, SegmentProperties } from '../model';
 
@@ -12,7 +12,7 @@ import { Segment, WaypointProperties, SegmentProperties } from '../model';
   providedIn: 'root',
 })
 export class InteractionService {
-  private readonly mapLayers = inject(MapLayersService);
+  private readonly layers = inject(MapLayersService);
   private readonly planner = inject(PlannerService);
   private readonly cursor = inject(CursorService);
 
@@ -59,20 +59,20 @@ export class InteractionService {
       .on('click', (e) => {
         // on click: if adding wps, add wp, deselect wp unless clicking an existing waypoint
         const clickedWaypoint =
-          map.queryRenderedFeatures(e.point, { layers: [LayerIds.WAYPOINTS] }).at(0) ?? null;
+          map.queryRenderedFeatures(e.point, { layers: [LayerIds.WAYPOINTS] }).at(0);
         if (this.isAddingWaypoints()) {
           let newPos: Position;
-          if (clickedWaypoint) {
+          if (clickedWaypoint === undefined) {
+            newPos = [e.lngLat.lng, e.lngLat.lat];
+          } else {
             const id = (clickedWaypoint.properties as WaypointProperties).id;
             newPos = this.planner.findWaypointById(id)!.position;
-          } else {
-            newPos = [e.lngLat.lng, e.lngLat.lat];
           }
           this.planner.addWaypoint(newPos);
         }
-        if (clickedWaypoint === null) {
+        if (clickedWaypoint === undefined) {
           map.setFeatureState(
-            { source: 'route', id: this.selectedWaypointId()! },
+            { source: SourceIds.TRIP, id: this.selectedWaypointId()! },
             { selected: false },
           );
           this.selectedWaypointId.set(null);
@@ -107,12 +107,12 @@ export class InteractionService {
         if (!this.isHoveringWaypoint()) return console.warn('Selecting a non-hovered waypoint?');
         if (this.hasSelectedWaypoint())
           map.setFeatureState(
-            { source: 'route', id: this.selectedWaypointId()! },
+            { source: SourceIds.TRIP, id: this.selectedWaypointId()! },
             { selected: false },
           );
         this.selectedWaypointId.set(this.hoveredWaypointId()!);
         map.setFeatureState(
-          { source: 'route', id: this.selectedWaypointId()! },
+          { source: SourceIds.TRIP, id: this.selectedWaypointId()! },
           { selected: true },
         );
         this.mayDragWaypointId.set(this.hoveredWaypointId()!);
@@ -132,7 +132,7 @@ export class InteractionService {
         if (this.isDraggingWaypoint() || this.isAddingWaypoints()) return;
         this.isOverLine.set(true);
         this.updateLineHover(map, e.lngLat);
-        this.mapLayers.setLayerData(map, LayerIds.ROUTE_HOVER_CURSOR, {
+        this.layers.setLayerData(map, LayerIds.ROUTE_HOVER_CURSOR, {
           type: 'Point',
           coordinates: [e.lngLat.lng, e.lngLat.lat],
         });
@@ -142,7 +142,7 @@ export class InteractionService {
         if (this.isDraggingWaypoint() || this.isAddingWaypoints()) return;
         this.isOverLine.set(false);
         this.updateLineHover(map, e.lngLat);
-        this.mapLayers.removeLayerData(map, LayerIds.ROUTE_HOVER_CURSOR);
+        this.layers.removeLayerData(map, LayerIds.ROUTE_HOVER_CURSOR);
       })
       .on('mousedown', LayerIds.ROUTE_LINE_HITBOX, (e) => {
         // if not hovering wp, start dragging route, make transparent marker opaque
@@ -168,7 +168,7 @@ export class InteractionService {
         }
         if (this.isDraggingSegment()) this.finishDraggingSegment(map, e.lngLat);
         this.updateLineHover(map, e.lngLat);
-        this.mapLayers.setLayerData(map, LayerIds.ROUTE_HOVER_CURSOR, {
+        this.layers.setLayerData(map, LayerIds.ROUTE_HOVER_CURSOR, {
           type: 'Point',
           coordinates: [e.lngLat.lng, e.lngLat.lat],
         });
@@ -179,7 +179,7 @@ export class InteractionService {
           this.isOverWaypoint.set(true);
           this.updateLineHover(map, e.lngLat);
           this.hoverProgress.set(draggingWaypointId, 1);
-          map.setFeatureState({ source: 'route', id: draggingWaypointId }, { hoverProgress: 1 });
+          map.setFeatureState({ source: SourceIds.TRIP, id: draggingWaypointId }, { hoverProgress: 1 });
         }
       });
   }
@@ -197,6 +197,11 @@ export class InteractionService {
         this.toggleAddingWaypoints();
       }
     });
+  }
+
+  turnAddingWaypointsOn(): void {
+    this.isAddingWaypoints.set(true);
+    this.cursor.set('adding-waypoint', true);
   }
 
   toggleAddingWaypoints(): void {
@@ -227,7 +232,7 @@ export class InteractionService {
       const t = Math.min((now - start) / duration, 1);
       const progress = from + (to - from) * ease(t);
       store.set(id, progress);
-      map.setFeatureState({ source: 'route', id }, { [key]: progress });
+      map.setFeatureState({ source: SourceIds.TRIP, id }, { [key]: progress });
       if (t < 1) requestAnimationFrame(frame);
     };
 
@@ -253,7 +258,7 @@ export class InteractionService {
         this.routeHoverIdx.set(nearestPoint.properties.segmentIndex);
         dragCursorCoordinates = nearestPoint.geometry.coordinates;
       }
-      this.mapLayers.setLayerData(map, LayerIds.ROUTE_HOVER_CURSOR, {
+      this.layers.setLayerData(map, LayerIds.ROUTE_HOVER_CURSOR, {
         type: 'Point',
         coordinates: dragCursorCoordinates,
       });
@@ -272,10 +277,10 @@ export class InteractionService {
   //#region Waypoint drag
 
   private beginDraggingWaypoint(map: MapboxMap, id: string, newPos: LngLat): void {
-    map.setFeatureState({ source: 'route', id: this.draggedWaypointId()! }, { dragging: true });
+    map.setFeatureState({ source: SourceIds.TRIP, id: this.draggedWaypointId()! }, { dragging: true });
     this.draggedWaypointId.set(id);
     this.updateDraggingWaypoint(map, newPos);
-    this.mapLayers.removeLayerData(map, LayerIds.DRAGGING_CURSOR);
+    this.layers.removeLayerData(map, LayerIds.DRAGGING_CURSOR);
     this.cursor.set('dragging', true);
   }
 
@@ -292,11 +297,11 @@ export class InteractionService {
     const { lng, lat } = newPos;
     coordinates.push([lng, lat]);
     if (nextSegment) coordinates.push(nextSegment.end.position);
-    this.mapLayers.setLayerData(map, LayerIds.EDITING_LINES, {
+    this.layers.setLayerData(map, LayerIds.EDITING_LINES, {
       type: 'LineString',
       coordinates: coordinates,
     });
-    this.mapLayers.setLayerData(map, LayerIds.DRAGGING_CURSOR, {
+    this.layers.setLayerData(map, LayerIds.DRAGGING_CURSOR, {
       type: 'Point',
       coordinates: [lng, lat],
     });
@@ -309,22 +314,22 @@ export class InteractionService {
     const newPos: Position = [lngLat.lng, lngLat.lat];
     this.planner.moveWaypoint(this.draggedWaypointId()!, newPos);
 
-    map.setFeatureState({ source: 'route', id: this.draggedWaypointId()! }, { dragging: false });
-    map.setFeatureState({ source: 'route', id: this.draggedWaypointId()! }, { selected: false });
+    map.setFeatureState({ source: SourceIds.TRIP, id: this.draggedWaypointId()! }, { dragging: false });
+    map.setFeatureState({ source: SourceIds.TRIP, id: this.draggedWaypointId()! }, { selected: false });
     this.draggedWaypointId.set(null);
     this.selectedWaypointId.set(null);
-    this.mapLayers.removeLayerData(map, LayerIds.EDITING_LINES);
-    this.mapLayers.removeLayerData(map, LayerIds.DRAGGING_CURSOR);
+    this.layers.removeLayerData(map, LayerIds.EDITING_LINES);
+    this.layers.removeLayerData(map, LayerIds.DRAGGING_CURSOR);
     this.cursor.set('dragging', false);
   }
 
   private cancelDraggingWaypoint(map: MapboxMap): void {
-    map.setFeatureState({ source: 'route', id: this.draggedWaypointId()! }, { dragging: false });
-    map.setFeatureState({ source: 'route', id: this.draggedWaypointId()! }, { selected: false });
+    map.setFeatureState({ source: SourceIds.TRIP, id: this.draggedWaypointId()! }, { dragging: false });
+    map.setFeatureState({ source: SourceIds.TRIP, id: this.draggedWaypointId()! }, { selected: false });
     this.draggedWaypointId.set(null);
     this.selectedWaypointId.set(null);
-    this.mapLayers.removeLayerData(map, LayerIds.EDITING_LINES);
-    this.mapLayers.removeLayerData(map, LayerIds.DRAGGING_CURSOR);
+    this.layers.removeLayerData(map, LayerIds.EDITING_LINES);
+    this.layers.removeLayerData(map, LayerIds.DRAGGING_CURSOR);
     this.cursor.set('dragging', false);
   }
 
@@ -354,7 +359,7 @@ export class InteractionService {
 
   private updateDraggingSegment(map: MapboxMap, newPos: LngLat): void {
     if (!this.draggedSegment()) return console.error('No segment is being dragged');
-    this.mapLayers.setLayerData(map, LayerIds.EDITING_LINES, {
+    this.layers.setLayerData(map, LayerIds.EDITING_LINES, {
       type: 'LineString',
       coordinates: [
         this.draggedSegment()!.start.position,
@@ -362,7 +367,7 @@ export class InteractionService {
         this.draggedSegment()!.end.position,
       ],
     });
-    this.mapLayers.setLayerData(map, LayerIds.DRAGGING_CURSOR, {
+    this.layers.setLayerData(map, LayerIds.DRAGGING_CURSOR, {
       type: 'Point',
       coordinates: [newPos.lng, newPos.lat],
     });
@@ -375,16 +380,16 @@ export class InteractionService {
     this.planner.splitSegment(this.draggedSegment()!, newPos);
 
     this.draggedSegment.set(null);
-    this.mapLayers.removeLayerData(map, LayerIds.EDITING_LINES);
-    this.mapLayers.removeLayerData(map, LayerIds.DRAGGING_CURSOR);
+    this.layers.removeLayerData(map, LayerIds.EDITING_LINES);
+    this.layers.removeLayerData(map, LayerIds.DRAGGING_CURSOR);
     this.cursor.set('dragging', false);
   }
 
   private cancelDraggingSegment(map: MapboxMap): void {
     this.draggedSegment.set(null);
-    this.mapLayers.removeLayerData(map, LayerIds.EDITING_LINES);
-    this.mapLayers.removeLayerData(map, LayerIds.DRAGGING_CURSOR);
-    this.mapLayers.removeLayerData(map, LayerIds.ROUTE_HOVER_CURSOR);
+    this.layers.removeLayerData(map, LayerIds.EDITING_LINES);
+    this.layers.removeLayerData(map, LayerIds.DRAGGING_CURSOR);
+    this.layers.removeLayerData(map, LayerIds.ROUTE_HOVER_CURSOR);
     this.cursor.set('dragging', false);
   }
 

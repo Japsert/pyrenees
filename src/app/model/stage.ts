@@ -1,7 +1,7 @@
-import { Feature, FeatureCollection, LineString, Point, Position } from 'geojson';
+import { Feature, LineString, Point, Position } from 'geojson';
 import { LngLat } from 'mapbox-gl';
 import { nearestPointOnLine } from '@turf/turf';
-import { generateId } from '../util';
+import { colorProperties, generateId, Id } from '../util';
 import {
   Segment,
   SegmentInfo,
@@ -10,57 +10,70 @@ import {
   Waypoint,
   WaypointProperties,
   Node,
+  SegmentJson,
 } from '.';
 import { NearestPointOnLine } from '../services';
+import { Color, color } from 'use-color';
 
-class GeoJSONError extends Error {
-  constructor(msg: string) {
-    super(msg);
-    this.name = 'GeoJSONError';
-    Object.setPrototypeOf(this, GeoJSONError.prototype);
-  }
-}
-
-export type WaypointFeatureCollection = FeatureCollection<Point, WaypointProperties>;
-export type SegmentFeatureCollection = FeatureCollection<LineString, SegmentProperties>;
-export type StageData = {
+export type StageJson = {
+  id: Id;
   version: number;
-  sourceId: string;
+  sourceId: Id;
   name: string;
   initialWaypoint: Waypoint | null;
-  segments: readonly Segment[];
+  segments: SegmentJson[];
 };
-export type StageFeatureCollection = FeatureCollection<
-  Point | LineString,
-  WaypointProperties | SegmentProperties
->;
+
+type WaypointFeature = Feature<Point, WaypointProperties>;
+type SegmentFeature = Feature<LineString, SegmentProperties>;
+type StageFeatures = {
+  waypoints: WaypointFeature[];
+  segments: SegmentFeature[];
+};
 
 export type StageStats = SegmentInfo;
 
 export class Stage {
   private static readonly VERSION: number = 6;
+  private static readonly DEFAULT_COLOR = color('#ffaa00');
 
   private constructor(
-    readonly sourceId: string,
+    readonly id: Id,
+    readonly sourceId: Id,
     readonly name: string,
+    readonly color: Color,
     readonly initialWaypoint: Waypoint | null,
     readonly segments: readonly Segment[],
   ) {}
 
   static create(): Stage {
-    return new Stage(generateId(), '', null, []);
+    return new Stage(generateId(), generateId(), 'New stage', Stage.DEFAULT_COLOR, null, []);
   }
 
   //#region Mutating methods
 
   withName(name: string) {
-    return new Stage(this.sourceId, name, this.initialWaypoint, this.segments);
+    return new Stage(
+      this.id,
+      this.sourceId,
+      name,
+      Stage.DEFAULT_COLOR,
+      this.initialWaypoint,
+      this.segments,
+    );
   }
 
   withAppendedWaypoint(position: Position): [Stage, Segment | null] {
     if (this.segments.length === 0 && !this.initialWaypoint) {
       const newInitialWaypoint = Waypoint.create(position);
-      const newStage = new Stage(this.sourceId, this.name, newInitialWaypoint, this.segments);
+      const newStage = new Stage(
+        this.id,
+        this.sourceId,
+        this.name,
+        Stage.DEFAULT_COLOR,
+        newInitialWaypoint,
+        this.segments,
+      );
       const appendedSegment = null;
       return [newStage, appendedSegment];
     }
@@ -70,17 +83,31 @@ export class Stage {
     const appendedSegment = Segment.create(start, end);
 
     const newSegments = [...this.segments, appendedSegment];
-    const newStage = new Stage(this.sourceId, this.name, null, newSegments);
+    const newStage = new Stage(
+      this.id,
+      this.sourceId,
+      this.name,
+      Stage.DEFAULT_COLOR,
+      null,
+      newSegments,
+    );
     return [newStage, appendedSegment];
   }
 
   withMovedWaypoint(
-    id: string,
+    id: Id,
     newPos: Position,
   ): [Stage, { prevSegment: Segment | undefined; nextSegment: Segment | undefined }] {
     if (this.initialWaypoint) {
       const initialWaypoint = this.initialWaypoint.withPosition(newPos);
-      const newStage = new Stage(this.sourceId, this.name, initialWaypoint, this.segments);
+      const newStage = new Stage(
+        this.id,
+        this.sourceId,
+        this.name,
+        Stage.DEFAULT_COLOR,
+        initialWaypoint,
+        this.segments,
+      );
       const neighborSegments = { prevSegment: undefined, nextSegment: undefined };
       return [newStage, neighborSegments];
     }
@@ -113,15 +140,29 @@ export class Stage {
       newSegments.splice(nextSegmentIdx, 1, newNextSegment);
     }
 
-    const newStage = new Stage(this.sourceId, this.name, this.initialWaypoint, newSegments);
+    const newStage = new Stage(
+      this.id,
+      this.sourceId,
+      this.name,
+      Stage.DEFAULT_COLOR,
+      this.initialWaypoint,
+      newSegments,
+    );
     const neighborSegments = { prevSegment: newPrevSegment, nextSegment: newNextSegment };
     return [newStage, neighborSegments];
   }
 
-  withDeletedWaypoint(id: string): [Stage, Segment | undefined] {
+  withDeletedWaypoint(id: Id): [Stage, Segment | undefined] {
     if (this.initialWaypoint != null) {
       const newInitialWaypoint = null;
-      const newStage = new Stage(this.sourceId, this.name, newInitialWaypoint, this.segments);
+      const newStage = new Stage(
+        this.id,
+        this.sourceId,
+        this.name,
+        Stage.DEFAULT_COLOR,
+        newInitialWaypoint,
+        this.segments,
+      );
       const newMergedSegment = undefined;
       return [newStage, newMergedSegment];
     }
@@ -143,24 +184,37 @@ export class Stage {
   }
 
   private withDeletedSegment(segment: Segment): [Stage, undefined] {
-    const idx = this.segments.indexOf(segment);
+    const idx = this.findSegmentIdxOrElse(segment.id);
 
-    if (idx === -1)
-      throw new Error('Tried to delete a segment that was not found in the segments array!');
-
-    const newSegments = [...this.segments].splice(idx, 1);
-    const newStage = new Stage(this.sourceId, this.name, this.initialWaypoint, newSegments);
+    const newSegments = [...this.segments];
+    newSegments.splice(idx, 1);
+    const newStage = new Stage(
+      this.id,
+      this.sourceId,
+      this.name,
+      Stage.DEFAULT_COLOR,
+      this.initialWaypoint,
+      newSegments,
+    );
     return [newStage, undefined];
   }
 
   private withMergedSegments(segment1: Segment, segment2: Segment): [Stage, Segment] {
-    const idx1 = this.segments.indexOf(segment1);
-    const idx2 = this.segments.indexOf(segment2);
+    const idx1 = this.findSegmentIdxOrElse(segment1.id);
+    const idx2 = this.findSegmentIdxOrElse(segment2.id);
     if (idx1 + 1 != idx2) throw new Error('Tried to merge two non-adjacent segments!');
 
     const newMergedSegment = Segment.create(segment1.start, segment2.end);
-    const newSegments = [...this.segments].splice(idx1, 2, newMergedSegment);
-    const newStage = new Stage(this.sourceId, this.name, this.initialWaypoint, newSegments);
+    const newSegments = [...this.segments];
+    newSegments.splice(idx1, 2, newMergedSegment);
+    const newStage = new Stage(
+      this.id,
+      this.sourceId,
+      this.name,
+      Stage.DEFAULT_COLOR,
+      this.initialWaypoint,
+      newSegments,
+    );
     return [newStage, newMergedSegment];
   }
 
@@ -168,34 +222,55 @@ export class Stage {
     segment: Segment,
     newPos: Position,
   ): [Stage, { prevSegment: Segment; nextSegment: Segment }] {
-    const idx = this.segments.indexOf(segment);
-    if (idx === -1)
-      throw new Error('Tried to split a segment that was not found in the segments array!');
+    const idx = this.findSegmentIdxOrElse(segment.id);
 
     const middle = Waypoint.create(newPos);
     const prevSegment = Segment.create(segment.start, middle);
     const nextSegment = Segment.create(middle, segment.end);
 
-    const newSegments = [...this.segments].splice(idx, 1, prevSegment, nextSegment);
-    const newStage = new Stage(this.sourceId, this.name, this.initialWaypoint, newSegments);
+    const newSegments = [...this.segments];
+    newSegments.splice(idx, 1, prevSegment, nextSegment);
+    const newStage = new Stage(
+      this.id,
+      this.sourceId,
+      this.name,
+      Stage.DEFAULT_COLOR,
+      this.initialWaypoint,
+      newSegments,
+    );
     const newSplitSegments = { prevSegment, nextSegment };
     return [newStage, newSplitSegments];
   }
 
-  withUpdatedSegment(segment: Segment, newSegment: Segment): [Stage, undefined] {
-    const idx = this.segments.indexOf(segment);
-    if (idx === -1)
-      throw new Error('Tried to update a segment that was not found in the segments array!');
+  // ha ha
+  private findSegmentIdxOrElse(segmentId: Id): number {
+    const idx = this.segments.findIndex((segment) => segment.id === segmentId);
+    if (idx === -1) {
+      debugger;
+      throw new Error('Segment not found in segments array!');
+    }
+    return idx;
+  }
 
-    const newSegments = [...this.segments].splice(idx, 1, newSegment);
-    const newStage = new Stage(this.sourceId, this.name, this.initialWaypoint, newSegments);
-    return [newStage, undefined];
+  withUpdatedSegment(segment: Segment, newSegment: Segment): Stage {
+    const idx = this.findSegmentIdxOrElse(segment.id);
+
+    const newSegments = [...this.segments];
+    newSegments[idx] = newSegment;
+    return new Stage(
+      this.id,
+      this.sourceId,
+      this.name,
+      Stage.DEFAULT_COLOR,
+      this.initialWaypoint,
+      newSegments,
+    );
   }
 
   //#endregion
   //#region Non-mutating methods
 
-  findWaypointById(id: string): Waypoint | null {
+  findWaypointById(id: Id): Waypoint | null {
     if (this.initialWaypoint?.id === id) return this.initialWaypoint;
 
     for (const segment of this.segments) {
@@ -233,32 +308,40 @@ export class Stage {
   //#endregion
   //#region JSON
 
-  toJson(): StageData {
+  toJson(): StageJson {
     return {
       version: Stage.VERSION,
+      id: this.id,
       sourceId: this.sourceId,
       name: this.name,
       initialWaypoint: this.initialWaypoint,
-      segments: this.segments,
+      segments: this.segments.map((segment) => segment.toJson()),
     };
   }
 
-  static fromJson(data: StageData): Stage {
+  static fromJson(data: StageJson): Stage {
     if (data.version != Stage.VERSION)
       throw new VersionMismatchError(
-        `Tried loading a route with a different version (${data.version}) than expected (${Stage.VERSION}).`,
+        `Tried loading a stage with a different version (${data.version}) than expected (${Stage.VERSION}).`,
       );
-    return new Stage(data.sourceId, data.name, data.initialWaypoint, data.segments);
+    return new Stage(
+      data.id,
+      data.sourceId,
+      data.name,
+      Stage.DEFAULT_COLOR,
+      data.initialWaypoint,
+      data.segments.map((segment) => Segment.fromJson(segment)),
+    );
   }
 
-  toGeoJson(): StageFeatureCollection {
+  toFeatures(): StageFeatures {
     return {
-      type: 'FeatureCollection',
-      features: [...this.waypointsToFeatures(), ...this.tracksToFeatures()],
+      waypoints: this.waypointsToFeatures(),
+      segments: this.segmentsToFeatures(),
     };
   }
 
-  private waypointsToFeatures(): Feature<Point, WaypointProperties>[] {
+  private waypointsToFeatures(): WaypointFeature[] {
     // Build list of waypoints, containing the start of every segment and the end of the last
     const waypoints = this.segments.map((segment) => segment.start);
     if (this.initialWaypoint) waypoints.push(this.initialWaypoint);
@@ -272,15 +355,16 @@ export class Stage {
       } satisfies Point,
       properties: {
         id: waypoint.id,
+        ...colorProperties(this.color),
       } satisfies WaypointProperties,
     }));
   }
 
-  private tracksToFeatures(): Feature<LineString, SegmentProperties>[] {
+  private segmentsToFeatures(): Feature<LineString, SegmentProperties>[] {
     // Save only routed segments
     const routedSegments = this.segments.filter(
       (s): s is Segment & { track: Node[]; info: SegmentInfo } =>
-        s.track !== null && s.info !== null,
+        s.track !== undefined && s.info !== undefined,
     );
     return routedSegments.map((segment) => ({
       type: 'Feature',
@@ -290,6 +374,7 @@ export class Stage {
       } satisfies LineString,
       properties: {
         id: segment.id,
+        ...colorProperties(this.color),
         trackElevation: segment.track.map((node) => node.elevation),
         trackTime: segment.track.map((node) => node.time),
         length: segment.info.length,
@@ -301,10 +386,10 @@ export class Stage {
   }
 
   toLineString(): LineString {
-    const tracks = this.tracksToFeatures();
+    const segments = this.segmentsToFeatures();
     return {
       type: 'LineString',
-      coordinates: tracks.flatMap((track) => track.geometry.coordinates),
+      coordinates: segments.flatMap((segment) => segment.geometry.coordinates),
     };
   }
 

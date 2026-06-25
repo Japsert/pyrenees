@@ -1,7 +1,7 @@
-<div #map1Container id="map1-container"></div>
-<div #map2Container id="map2-container"></div>
-<div class="absolute bottom-0 w-full flex flex-col">
-  <app-trip-bar class="ml-2 mr-2 h-(--trip-bar-height) w-min" />
+<div #map1Container id="map1-container" class="transition-opacity duration-(--style-switch-transition-duration)"></div>
+<div #map2Container id="map2-container" class="transition-opacity duration-(--style-switch-transition-duration)"></div>
+<div class="absolute bottom-0 w-full flex flex-col pointer-events-none">
+  <app-trip-bar class="ml-2 mr-2 h-(--trip-bar-height) w-min pointer-events-auto" />
   <app-bottom-bar
     class="relative m-(--bottom-bar-margin) h-(--bottom-bar-height) flex gap-2"
   />

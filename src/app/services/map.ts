@@ -19,16 +19,21 @@ import {
 import { MapStyle } from '../style.enum';
 import { RouteControl } from '../map/route-control/route-control';
 import { PlannerService } from './planner';
-import { MapLayersService } from './map-layers';
+import { MapLayersService } from './layers';
 import { InteractionService } from './interaction';
 import { CursorService } from './cursor';
-import { Route, Stage } from '../model';
+import { Trip } from '../model';
+import { SourceIds } from '../ids.enum';
+import { getGlobalStyleAsNumber } from '../util';
 
-export const BOTTOM_BAR_HEIGHT_PX = 128;
-export const BOTTOM_BAR_PADDING_PX = 32;
+const BOTTOM_BAR_HEIGHT_PX = getGlobalStyleAsNumber('--bottom-bar-height');
+const BOTTOM_BAR_MARGIN_PX = getGlobalStyleAsNumber('--bottom-bar-margin');
 export const FLY_TO_BOTTOM_PADDING: PaddingOptions = {
-  bottom: BOTTOM_BAR_HEIGHT_PX + 2 * BOTTOM_BAR_PADDING_PX,
+  bottom: BOTTOM_BAR_HEIGHT_PX + 2 * BOTTOM_BAR_MARGIN_PX,
 };
+const STYLE_SWITCH_TRANSITION_DURATION_MS = getGlobalStyleAsNumber(
+  '--style-switch-transition-duration',
+);
 
 @Injectable({
   providedIn: 'root',
@@ -36,68 +41,63 @@ export const FLY_TO_BOTTOM_PADDING: PaddingOptions = {
 export class MapService {
   activeStyle = signal<MapStyle>(MapStyle.OUTDOOR);
 
+  private static readonly OUTDOOR_STYLE_URL = 'mapbox://styles/japsert-/cmotu1b3x007o01s67wvi4hiv';
+  private static readonly SATELLITE_STYLE_URL =
+    'mapbox://styles/japsert-/cmog7wz6t000f01qwgqldfyeo';
+
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly appRef = inject(ApplicationRef);
+  private readonly injector = inject(EnvironmentInjector);
+
   private readonly layers = inject(MapLayersService);
   private readonly interaction = inject(InteractionService);
   private readonly planner = inject(PlannerService);
   private readonly cursor = inject(CursorService);
 
-  private map1Container: HTMLElement | null = null;
-  private map2Container: HTMLElement | null = null;
-  private map1: MapboxMap | null = null;
-  private map2: MapboxMap | null = null;
-
-  private readonly appRef = inject(ApplicationRef);
-  private readonly injector = inject(EnvironmentInjector);
+  private readonly outdoorMap = signal<MapboxMap | null>(null);
+  private readonly satelliteMap = signal<MapboxMap | null>(null);
 
   constructor() {
-    // Update rendered stage data when stage updates
     effect(() => {
-      const routes = this.planner.trip().routes();
-      routes.forEach((route) => this.watchRoute(route));
+      const outdoorMap = this.outdoorMap();
+      const satelliteMap = this.satelliteMap();
+      const trip = this.planner.trip();
+      //console.debug('either map, or trip updated. redrawing trip');
+      if (outdoorMap !== null) this.redrawTrip(outdoorMap, trip);
+      if (satelliteMap !== null) this.redrawTrip(satelliteMap, trip);
     });
   }
 
-  private watchRoute(route: Route): void {
-    effect(() => {
-      const stages = route.stages();
-      stages.forEach((stage) => this.updateStageData(stage));
-    });
+  private redrawTrip(map: MapboxMap, trip: Trip): void {
+    map.getSource<GeoJSONSource>(SourceIds.TRIP)?.setData(trip.toGeoJson());
   }
 
-  updateStageData(stage: Stage): void {
-    this.getAllMaps().forEach((map) =>
-      map.getSource<GeoJSONSource>(stage.sourceId)?.setData(stage.toGeoJson()),
-    );
-  }
-
-  async initMaps(container1: HTMLElement, container2: HTMLElement): Promise<void> {
+  initMaps(outdoorContainer: HTMLElement, satelliteContainer: HTMLElement): void {
     if (!isPlatformBrowser(this.platformId)) return;
 
-    this.map1Container = container1;
-    this.map2Container = container2;
-    this.setStyle(MapStyle.OUTDOOR);
+    const outdoorMap = this.createMap(outdoorContainer, MapService.OUTDOOR_STYLE_URL);
+    this.addControls(outdoorMap);
+    this.addMapHandlers(outdoorMap);
+    this.interaction.addPlannerHandlers(outdoorMap);
 
-    this.map1 = this.createMap(container1, 'mapbox://styles/japsert-/cmotu1b3x007o01s67wvi4hiv');
-    this.addControls(this.map1);
-    this.addMapHandlers(this.map1);
-    this.interaction.addPlannerHandlers(this.map1);
+    console.debug(BOTTOM_BAR_HEIGHT_PX, BOTTOM_BAR_MARGIN_PX, STYLE_SWITCH_TRANSITION_DURATION_MS);
 
-    this.map1.once('load', () => {
-      this.layers.addAllLayers(this.map1!);
-      // TODO: this.mapLayers.addStageLayer(...);
+    outdoorMap.on('error', (e) => console.error('outdoor map error:', e.error));
 
-      container2.hidden = false;
-      this.map2 = this.createMap(container2, 'mapbox://styles/japsert-/cmog7wz6t000f01qwgqldfyeo');
-      container2.hidden = true;
-      this.addControls(this.map2);
-      this.addMapHandlers(this.map2);
-      this.interaction.addPlannerHandlers(this.map2);
+    outdoorMap.once('load', () => {
+      this.layers.addAllLayers(outdoorMap);
+      this.outdoorMap.set(outdoorMap);
 
-      this.map2.once('load', () => {
-        this.layers.addAllLayers(this.map2!);
-        // TODO: this.mapLayers.addStageLayer(...);
+      satelliteContainer.hidden = false;
+      const satelliteMap = this.createMap(satelliteContainer, MapService.SATELLITE_STYLE_URL);
+      satelliteContainer.hidden = true;
+      this.addControls(satelliteMap);
+      this.addMapHandlers(satelliteMap);
+      this.interaction.addPlannerHandlers(satelliteMap);
 
+      satelliteMap.once('load', () => {
+        this.layers.addAllLayers(satelliteMap);
+        this.satelliteMap.set(satelliteMap);
         this.interaction.addRoutePlannerKeyboardHandlers(() => this.getActiveMap());
       });
     });
@@ -126,35 +126,37 @@ export class MapService {
 
   private addMapHandlers(map: MapboxMap): void {
     map.on('mousedown', () => this.cursor.set('dragging', true));
-    map.on('mouseup', () => this.cursor.set('dragging', false));
+    globalThis.addEventListener('mouseup', () => this.cursor.set('dragging', false));
   }
 
   getAllMaps(): MapboxMap[] {
-    if (this.map1 === null || this.map2 === null)
+    const outdoorMap = this.outdoorMap();
+    const satelliteMap = this.satelliteMap();
+    if (outdoorMap === null || satelliteMap === null)
       throw new Error('One of the maps is uninitialized!');
-    return [this.map1, this.map2];
+    return [outdoorMap, satelliteMap];
   }
 
   getActiveMap(): MapboxMap {
-    if (!this.map1Container?.hidden) return this.map1!;
-    if (!this.map2Container?.hidden) return this.map2!;
+    if (!this.outdoorMap()?.getContainer().hidden) return this.outdoorMap()!;
+    if (!this.satelliteMap()?.getContainer().hidden) return this.satelliteMap()!;
     throw new Error('No active map found!');
   }
 
   private getInactiveMap(): MapboxMap {
-    if (this.map1Container?.hidden) return this.map1!;
-    if (this.map2Container?.hidden) return this.map2!;
+    if (this.outdoorMap()?.getContainer().hidden) return this.outdoorMap()!;
+    if (this.satelliteMap()?.getContainer().hidden) return this.satelliteMap()!;
     throw new Error('No inactive map found!');
   }
 
   destroyMaps(): void {
-    if (this.map1) {
-      this.map1.remove();
-      this.map1 = null;
+    if (this.outdoorMap()) {
+      this.outdoorMap()?.remove();
+      this.outdoorMap.set(null);
     }
-    if (this.map2) {
-      this.map2.remove();
-      this.map2 = null;
+    if (this.satelliteMap()) {
+      this.satelliteMap()?.remove();
+      this.satelliteMap.set(null);
     }
   }
 
@@ -163,16 +165,19 @@ export class MapService {
       style === MapStyle.OUTDOOR ? MapStyle.SATELLITE : MapStyle.OUTDOOR,
     );
     this.sync();
-    this.setStyle(this.activeStyle());
-    this.getActiveMap().resize();
-  }
-
-  private setStyle(style: MapStyle): void {
-    if (!this.map1Container || !this.map2Container)
-      throw new Error('One of the maps not initialized yet!');
-
-    this.map1Container.hidden = style === MapStyle.SATELLITE;
-    this.map2Container.hidden = style === MapStyle.OUTDOOR;
+    const activeMap = this.getActiveMap();
+    const inactiveMap = this.getInactiveMap();
+    activeMap.getContainer().style.zIndex = '0';
+    inactiveMap.getContainer().style.zIndex = '-10';
+    inactiveMap.getContainer().hidden = false;
+    inactiveMap.resize();
+    inactiveMap.getContainer().style.opacity = '1';
+    activeMap.getContainer().style.opacity = '0';
+    setTimeout(() => {
+      activeMap.getContainer().hidden = true;
+      activeMap.getContainer().style.zIndex = '-10';
+      inactiveMap.getContainer().style.zIndex = '0';
+    }, STYLE_SWITCH_TRANSITION_DURATION_MS);
   }
 
   private sync() {

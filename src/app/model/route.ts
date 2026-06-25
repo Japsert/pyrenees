@@ -1,30 +1,71 @@
-import { Signal, signal } from '@angular/core';
-import { Segment, Stage, StageData, Waypoint } from '.';
+import { Segment, SegmentProperties, Stage, StageJson, Waypoint, WaypointProperties } from '.';
 import { LngLat } from 'mapbox-gl';
 import { NearestPointOnLine } from '../services';
-import { nearestPoint } from '../util';
+import { generateId, Id, nearestPoint } from '../util';
+import { Feature, LineString, Point } from 'geojson';
 
-export type RouteData = {
+export type RouteJson = {
+  id: Id;
   name: string;
-  stages: StageData[];
+  stages: StageJson[];
+};
+
+type WaypointFeature = Feature<Point, WaypointProperties>;
+type SegmentFeature = Feature<LineString, SegmentProperties>;
+type RouteFeatures = {
+  waypoints: WaypointFeature[];
+  segments: SegmentFeature[];
 };
 
 export class Route {
   private constructor(
+    readonly id: Id,
     readonly name: string,
-    readonly stages: Signal<Stage[]>,
+    readonly stages: readonly Stage[],
   ) {}
 
   static create(): Route {
-    return new Route('', signal([]));
+    return new Route(generateId(), 'New route', []);
   }
 
   withName(name: string): Route {
-    return new Route(name, this.stages);
+    return new Route(this.id, name, this.stages);
   }
 
-  findWaypointById(id: string): Waypoint | null {
-    for (const stage of this.stages()) {
+  withAddedStage(): [Route, Stage] {
+    const newStage = Stage.create();
+    const newStages = [...this.stages, newStage];
+    const newRoute = new Route(this.id, this.name, newStages);
+    return [newRoute, newStage];
+  }
+
+  withUpdatedStage(stage: Stage, func: (stage: Stage) => Stage): Route {
+    const idx = this.findStageIdxOrElse(stage.id);
+    const newStages = [...this.stages];
+    newStages[idx] = func(stage);
+    return new Route(this.id, this.name, newStages);
+  }
+  
+  withDeletedStage(stage: Stage): Route {
+    const idx = this.findStageIdxOrElse(stage.id);
+    const newStages = [...this.stages];
+    newStages.splice(idx, 1);
+    return new Route(this.id, this.name, newStages);
+  }
+
+  // ha ha
+  private findStageIdxOrElse(stageId: Id): number {
+    const idx = this.stages.findIndex((stage) => stage.id === stageId);
+    if (idx === -1) throw new Error('Stage not found in stages array!');
+    return idx;
+  }
+  
+  findStageById(id: Id): Stage | null {
+    return this.stages.find((stage) => stage.id === id) ?? null;
+  }
+
+  findWaypointById(id: Id): Waypoint | null {
+    for (const stage of this.stages) {
       const waypoint = stage.findWaypointById(id);
       if (waypoint !== null) return waypoint;
     }
@@ -32,7 +73,7 @@ export class Route {
   }
 
   findSegment(func: (segment: Segment) => boolean): Segment | null {
-    for (const stage of this.stages()) {
+    for (const stage of this.stages) {
       const segment = stage.findSegment(func);
       if (segment !== null) return segment;
     }
@@ -40,14 +81,26 @@ export class Route {
   }
 
   nearestPoint(lngLat: LngLat): NearestPointOnLine | undefined {
-    return nearestPoint(this.stages(), lngLat);
+    return nearestPoint(this.stages, lngLat);
   }
 
-  toJson(): RouteData {
-    return { name: this.name, stages: this.stages().map((stage) => stage.toJson()) };
+  toJson(): RouteJson {
+    return { id: this.id, name: this.name, stages: this.stages.map((stage) => stage.toJson()) };
   }
 
-  static fromJson(d: RouteData): Route {
-    return new Route(d.name, signal(d.stages.map((stage) => Stage.fromJson(stage))));
+  static fromJson(d: RouteJson): Route {
+    return new Route(
+      d.id,
+      d.name,
+      d.stages.map((stage) => Stage.fromJson(stage)),
+    );
+  }
+
+  toFeatures(): RouteFeatures {
+    const stagesFeatures = this.stages.map((stage) => stage.toFeatures());
+    return {
+      waypoints: stagesFeatures.flatMap((features) => features.waypoints),
+      segments: stagesFeatures.flatMap((features) => features.segments),
+    };
   }
 }

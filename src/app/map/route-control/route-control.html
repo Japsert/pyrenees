@@ -1,6 +1,6 @@
 <button title="Undo" (click)="undo()" [disabled]="!canUndo()">↩</button>
 <button title="Redo" (click)="redo()" [disabled]="!canRedo()">↪</button>
-<button title="Edit route" (click)="edit()" [attr.aria-pressed]="isEditing()">✏️</button>
+<button title="Edit route" (click)="edit()" [attr.aria-pressed]="isAddingWaypoints()">✏️</button>
 <div class="relative inline-block border-t border-t-[#ddd]" (mousedown)="$event.stopPropagation()">
   <button title="Clear route" (click)="toggleShowConfirmClear()" [disabled]="!canClear()">
     🗑️
@@ -13,3 +13,4 @@
 </div>
 <button title="Export" (click)="export()" class="border-t! border-t-[#ddd]!">📤</button>
 <button title="Import" (click)="import()">📥</button>
+<button title="Debug" (click)="debug()">🐛</button>

@@ -1,9 +1,18 @@
 import { FeatureCollection, LineString } from 'geojson';
-import { generateId } from '../util';
-import { Waypoint, Node } from '.';
+import { generateId, Id } from '../util';
+import { Waypoint, Node, WaypointJson, NodeJson } from '.';
+
+export type SegmentJson = {
+  id: Id,
+  start: WaypointJson,
+  end: WaypointJson,
+  track: NodeJson[] | undefined,
+  info: SegmentInfo | undefined,
+}
 
 export type SegmentProperties = {
-  id: string;
+  id: Id;
+  color: string;
   trackElevation: number[];
   trackTime: number[];
 } & SegmentInfo;
@@ -15,25 +24,31 @@ export type SegmentInfo = {
   readonly time: number;
 };
 
-type BRouterGeoJSONProperties = {
+type BRouterGeoJsonProperties = {
   times: number[];
   'track-length': string;
   'filtered ascend': string;
   'plain-ascend': string;
   'total-time': string;
 };
-export type BRouterFeatureCollection = FeatureCollection<LineString, BRouterGeoJSONProperties>;
+export type BRouterFeatureCollection = FeatureCollection<LineString, BRouterGeoJsonProperties>;
 
 export class Segment {
   private constructor(
-    readonly id: string,
+    readonly id: Id,
     readonly start: Waypoint,
     readonly end: Waypoint,
     readonly track?: readonly Node[],
     readonly info?: SegmentInfo,
   ) {}
-  
-  static create(start: Waypoint, end: Waypoint, id: string = generateId(), track?: readonly Node[], info?: SegmentInfo): Segment {
+
+  static create(
+    start: Waypoint,
+    end: Waypoint,
+    id: string = generateId(),
+    track?: readonly Node[],
+    info?: SegmentInfo,
+  ): Segment {
     return new Segment(id, start, end, track, info);
   }
 
@@ -54,9 +69,29 @@ export class Segment {
     return new Segment(this.id, this.start, this.end, track, info);
   }
 
-  findWaypoint(id: string): Waypoint | null {
+  findWaypoint(id: Id): Waypoint | null {
     if (this.start.id === id) return this.start;
     if (this.end.id === id) return this.end;
     return null;
+  }
+
+  toJson(): SegmentJson {
+    return {
+      id: this.id,
+      start: this.start.toJson(),
+      end: this.end.toJson(),
+      track: this.track?.map((node) => node.toJson()),
+      info: this.info,
+    }
+  }
+
+  static fromJson(data: SegmentJson): Segment {
+    return new Segment(
+      data.id,
+      Waypoint.fromJson(data.start),
+      Waypoint.fromJson(data.end),
+      data.track?.map((node) => Node.fromJson(node)),
+      data.info,
+    )
   }
 }

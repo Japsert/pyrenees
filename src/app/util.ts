@@ -1,5 +1,6 @@
-import { LngLat, Map as MapboxMap } from 'mapbox-gl';
+import { LngLat } from 'mapbox-gl';
 import { NearestPointOnLine } from './services';
+import { Color } from 'use-color';
 
 function cubicBezier(t: number, p1x: number, p1y: number, p2x: number, p2y: number): number {
   // Newton's method to solve for t given x, then evaluate y
@@ -32,7 +33,9 @@ export function ease(t: number): number {
   return cubicBezier(t, 0.25, 0.1, 0.25, 1);
 }
 
-export function generateId(): string {
+export type Id = string;
+
+export function generateId(): Id {
   return Math.random().toString(36).slice(2, 8);
 }
 
@@ -57,7 +60,7 @@ export function sma(data: number[], window: number): number[] {
 
 export function nearestPoint<
   T extends { nearestPoint(lngLat: LngLat): NearestPointOnLine | undefined },
->(array: T[], lngLat: LngLat): NearestPointOnLine | undefined {
+>(array: readonly T[], lngLat: LngLat): NearestPointOnLine | undefined {
   let min: NearestPointOnLine | undefined = undefined;
   for (const item of array) {
     const point = item.nearestPoint(lngLat);
@@ -66,4 +69,26 @@ export function nearestPoint<
       min = point;
   }
   return min;
+}
+
+type ColorProperties = {
+  color: string;
+  hoverColor: string;
+  selectColor: string;
+};
+
+export function colorProperties(baseColor: Color): ColorProperties {
+  return {
+    color: baseColor.toHex(),
+    hoverColor: baseColor.darken(0.1).toHex(),
+    selectColor: baseColor.darken(0.2).toHex(),
+  };
+}
+
+export function getGlobalStyle(style: string): string {
+  return globalThis.getComputedStyle(document.documentElement).getPropertyValue(style).trim();
+}
+
+export function getGlobalStyleAsNumber(style: string): number {
+  return Number.parseFloat(getGlobalStyle(style));
 }

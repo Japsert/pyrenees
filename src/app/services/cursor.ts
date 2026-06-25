@@ -1,8 +1,8 @@
-import { Injectable } from '@angular/core';
+import { HostListener, Injectable } from '@angular/core';
 
 export type CursorReason = 'adding-waypoint' | 'dragging' | 'hovering-draggable' | 'default';
 const CURSOR_PRIORITY: CursorReason[] = [
-  'adding-waypoint', // highest — always overrides everything
+  'adding-waypoint', // highest
   'dragging',
   'hovering-draggable',
   'default', // lowest
@@ -19,7 +19,7 @@ const CURSOR_STYLE: Record<CursorReason, string> = {
 })
 export class CursorService {
   private readonly activeReasons = new Set<CursorReason>(['default']);
-
+  
   set(reason: CursorReason, active: boolean): void {
     if (active) this.activeReasons.add(reason);
     else this.activeReasons.delete(reason);

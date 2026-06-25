@@ -4,7 +4,7 @@ import { computed, Injectable, signal } from '@angular/core';
   providedIn: 'root',
 })
 export class HistoryService<T> {
-  private readonly isInitialized = false;
+  private isInitialized = false;
 
   private readonly history = signal<T[]>([]);
   private readonly future = signal<T[]>([]);
@@ -16,6 +16,7 @@ export class HistoryService<T> {
   init(initial: T): void {
     if (this.isInitialized) throw new Error('UndoRedoService::init() called twice');
     this.current.set(initial);
+    this.isInitialized = true;
   }
 
   commit(): void {

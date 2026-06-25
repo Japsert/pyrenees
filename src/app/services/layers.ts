@@ -1,15 +1,31 @@
 import { Injectable } from '@angular/core';
 import { GeoJSONSource, Map as MapboxMap, Popup } from 'mapbox-gl';
-import { LayerIds } from '../layer-ids.enum';
+import { LayerIds, SourceIds } from '../ids.enum';
 import { GeoJSON } from 'geojson';
 
 @Injectable({
   providedIn: 'root',
 })
 export class MapLayersService {
+  setLayerData(map: MapboxMap, layerId: string, data: GeoJSON): void {
+    const source = map.getSource(layerId) as GeoJSONSource | undefined;
+    if (!source) return console.error(`Source for layer ${layerId} not found`);
+    source.setData(data);
+  }
+
+  removeLayerData(map: MapboxMap, layerId: string): void {
+    const source = map.getSource(layerId) as GeoJSONSource | undefined;
+    if (!source) return console.error(`Source for layer ${layerId} not found`);
+    source.setData({
+      type: 'FeatureCollection',
+      features: [],
+    });
+  }
+
   addAllLayers(map: MapboxMap): void {
     this.addTrailLayers(map);
     //this.addShelterLayer(map);
+    this.addTripLayers(map);
     //this.addRouteDebugLayers(map);
     this.addChartMarkerLayer(map);
     this.addEditLinesLayer(map);
@@ -17,105 +33,20 @@ export class MapLayersService {
     this.addRouteHoverCursorLayer(map);
   }
 
-  addStageLayer(map: MapboxMap): void {
-    map
-      .addSource('route', {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: [],
-        },
-        promoteId: 'id',
-      })
-      .addLayer({
-        id: LayerIds.ROUTE_LINE,
-        type: 'line',
-        source: 'route',
-        filter: ['==', '$type', 'LineString'],
-        layout: {
-          'line-cap': 'round',
-          'line-join': 'round',
-        },
-        paint: {
-          'line-color': '#ffaa00',
-          'line-width': 3,
-        },
-      })
-      .addLayer({
-        id: LayerIds.ROUTE_LINE_HITBOX,
-        type: 'line',
-        source: 'route',
-        filter: ['==', '$type', 'LineString'],
-        layout: {
-          'line-cap': 'round',
-          'line-join': 'round',
-        },
-        paint: {
-          'line-color': 'transparent',
-          'line-width': 16,
-        },
-      })
-      .addLayer({
-        id: LayerIds.WAYPOINTS,
-        type: 'circle',
-        source: 'route',
-        filter: ['==', '$type', 'Point'],
-        paint: {
-          'circle-radius': [
-            'case',
-            ['coalesce', ['feature-state', 'selected'], false],
-            10,
-            [
-              'interpolate',
-              ['linear'],
-              ['coalesce', ['feature-state', 'hoverProgress'], 0],
-              0,
-              6,
-              1,
-              10,
-            ],
-          ],
-          'circle-color': [
-            'case',
-            ['coalesce', ['feature-state', 'selected'], false],
-            '#ff3300',
-            [
-              'interpolate',
-              ['linear'],
-              ['coalesce', ['feature-state', 'hoverProgress'], 0],
-              0,
-              '#ffaa00',
-              1,
-              '#ff6600',
-            ],
-          ],
-          'circle-opacity': ['case', ['coalesce', ['feature-state', 'dragging'], false], 0.5, 1],
-          'circle-stroke-color': '#fff',
-          'circle-stroke-width': 2,
-          'circle-stroke-opacity': [
-            'case',
-            ['coalesce', ['feature-state', 'dragging'], false],
-            0.5,
-            1,
-          ],
-        },
-      });
-  }
-
   private addTrailLayers(map: MapboxMap): void {
     map
-      .addSource('gr10-tileset', {
+      .addSource(SourceIds.GR10, {
         type: 'vector',
         url: 'mapbox://japsert-.cmolcxvbv061n1opdqvgpna20-33hp1',
       })
-      .addSource('gr11-tileset', {
+      .addSource(SourceIds.GR11, {
         type: 'vector',
         url: 'mapbox://japsert-.cmolcxw8e09v01mk0zoifowc7-4xu85',
       })
       .addLayer({
-        id: 'gr10',
+        id: LayerIds.GR10,
         type: 'line',
-        source: 'gr10-tileset',
+        source: SourceIds.GR10,
         'source-layer': 'GR10',
         paint: {
           'line-color': 'hsl(0, 100%, 50%)',
@@ -126,9 +57,9 @@ export class MapLayersService {
         },
       })
       .addLayer({
-        id: 'gr11',
+        id: LayerIds.GR11,
         type: 'line',
-        source: 'gr11-tileset',
+        source: SourceIds.GR11,
         'source-layer': 'GR11',
         paint: {
           'line-color': 'hsl(200, 100%, 50%)',
@@ -181,7 +112,92 @@ export class MapLayersService {
       .on('mouseleave', 'shelters', () => (map.getCanvas().style.cursor = ''));
   }
 
-  addRouteDebugLayers(map: MapboxMap): void {
+  private addTripLayers(map: MapboxMap): void {
+    map
+      .addSource(SourceIds.TRIP, {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [],
+        },
+        promoteId: 'id',
+      })
+      .addLayer({
+        id: LayerIds.ROUTE_LINE,
+        type: 'line',
+        source: SourceIds.TRIP,
+        filter: ['==', '$type', 'LineString'],
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': 3,
+        },
+      })
+      .addLayer({
+        id: LayerIds.ROUTE_LINE_HITBOX,
+        type: 'line',
+        source: SourceIds.TRIP,
+        filter: ['==', '$type', 'LineString'],
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+        paint: {
+          'line-color': 'transparent',
+          'line-width': 16,
+        },
+      })
+      .addLayer({
+        id: LayerIds.WAYPOINTS,
+        type: 'circle',
+        source: SourceIds.TRIP,
+        filter: ['==', '$type', 'Point'],
+        paint: {
+          'circle-radius': [
+            'case',
+            ['coalesce', ['feature-state', 'selected'], false],
+            10,
+            [
+              'interpolate',
+              ['linear'],
+              ['coalesce', ['feature-state', 'hoverProgress'], 0],
+              0,
+              6,
+              1,
+              10,
+            ],
+          ],
+          'circle-color': [
+            'case',
+            ['coalesce', ['feature-state', 'selected'], false],
+            ['get', 'selectColor'],
+            [
+              'interpolate',
+              ['linear'],
+              ['coalesce', ['feature-state', 'hoverProgress'], 0],
+              0,
+              ['get', 'color'],
+              1,
+              ['get', 'hoverColor'],
+            ],
+          ],
+          'circle-opacity': ['case', ['coalesce', ['feature-state', 'dragging'], false], 0.5, 1],
+          'circle-stroke-color': '#fff',
+          'circle-stroke-width': 2,
+          'circle-stroke-opacity': [
+            'case',
+            ['coalesce', ['feature-state', 'dragging'], false],
+            0.5,
+            1,
+          ],
+        },
+      });
+  }
+
+  private addRouteDebugLayers(map: MapboxMap): void {
     map
       .addSource('debug-averaged-route', {
         type: 'geojson',
@@ -315,21 +331,6 @@ export class MapLayersService {
         'circle-stroke-color': '#fff',
         'circle-stroke-opacity': 0.5,
       },
-    });
-  }
-
-  setLayerData(map: MapboxMap, layerId: string, data: GeoJSON): void {
-    const source = map.getSource(layerId) as GeoJSONSource | undefined;
-    if (!source) return console.error(`Source for layer ${layerId} not found`);
-    source.setData(data);
-  }
-
-  removeLayerData(map: MapboxMap, layerId: string): void {
-    const source = map.getSource(layerId) as GeoJSONSource | undefined;
-    if (!source) return console.error(`Source for layer ${layerId} not found`);
-    source.setData({
-      type: 'FeatureCollection',
-      features: [],
     });
   }
 }

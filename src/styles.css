@@ -12,9 +12,11 @@
   --bottom-bar-height: 128px;
   --bottom-bar-margin: 8px;
   --trip-bar-height: 52px;
+  --style-switch-transition-duration: 200ms;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
 }
@@ -37,4 +39,13 @@ html, body {
 
 .mapboxgl-canvas-container.mapboxgl-interactive {
   cursor: var(--map-cursor) !important;
+}
+
+/* Make sure all buttons have the right cursor, the one to add a new route did not for some reason */
+
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
 }

@@ -1,9 +1,10 @@
-<div
+<button
   contenteditable
   [textContent]="text()"
   #el
-  (input)="onInput(el)"
-  (keydown.enter)="$event.preventDefault()"
+  (blur)="onBlur(el)"
+  (keydown)="$event.stopPropagation()"
+  (keydown.enter)="$event.preventDefault(); $any($event.target)?.blur()"
   [attr.data-placeholder]="placeholder()"
   class="hover:cursor-text"
-></div>
+></button>

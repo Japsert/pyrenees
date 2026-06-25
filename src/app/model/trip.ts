@@ -1,12 +1,12 @@
-import { Signal, signal } from '@angular/core';
-import { Route, RouteData, Segment, Waypoint } from '.';
+import { Route, RouteJson, Segment, Stage, Waypoint } from '.';
 import { LngLat } from 'mapbox-gl';
-import { nearestPoint } from '../util';
+import { Id, nearestPoint } from '../util';
 import { NearestPointOnLine } from '../services';
+import { GeoJSON } from 'geojson';
 
-export type TripData = {
+export type TripJson = {
   version: number;
-  routes: RouteData[];
+  routes: RouteJson[];
 };
 
 export class VersionMismatchError extends Error {
@@ -18,16 +18,79 @@ export class VersionMismatchError extends Error {
 }
 
 export class Trip {
-  private static readonly VERSION: number = 1;
+  private static readonly VERSION: number = 2;
 
-  private constructor(readonly routes: Signal<Route[]>) {}
+  private constructor(readonly routes: readonly Route[]) {}
 
   static create() {
-    return new Trip(signal([]));
+    return new Trip([]);
   }
 
-  findWaypointById(id: string): Waypoint | null {
-    for (const route of this.routes()) {
+  withAddedRoute(): [Trip, Route] {
+    const newRoute = Route.create();
+    const newRoutes = [...this.routes, newRoute];
+    const newTrip = new Trip(newRoutes);
+    return [newTrip, newRoute];
+  }
+
+  withAddedStage(route: Route): [Trip, Stage] {
+    const idx = this.findRouteIdxOrElse(route.id);
+    const newRoutes = [...this.routes];
+    const [newRoute, newStage] = newRoutes[idx].withAddedStage();
+    newRoutes[idx] = newRoute;
+    const newTrip = new Trip(newRoutes);
+    return [newTrip, newStage];
+  }
+
+  // ha ha
+  private findRouteIdxOrElse(routeId: Id): number {
+    const idx = this.routes.findIndex((route) => route.id === routeId);
+    if (idx === -1) throw new Error('Route not found in routes array!');
+    return idx;
+  }
+
+  withUpdatedRoute(route: Route, func: (route: Route) => Route): Trip {
+    const idx = this.findRouteIdxOrElse(route.id);
+    const newRoutes = [...this.routes];
+    newRoutes[idx] = func(route);
+    return new Trip(newRoutes);
+  }
+
+  withUpdatedStage(route: Route, stage: Stage, func: (stage: Stage) => Stage): Trip {
+    const idx = this.findRouteIdxOrElse(route.id);
+    const newRoutes = [...this.routes];
+    newRoutes[idx] = newRoutes[idx].withUpdatedStage(stage, func);
+    return new Trip(newRoutes);
+  }
+
+  withDeletedRoute(route: Route): Trip {
+    const idx = this.findRouteIdxOrElse(route.id);
+    const newRoutes = [...this.routes];
+    newRoutes.splice(idx, 1);
+    return new Trip(newRoutes);
+  }
+
+  withDeletedStage(route: Route, stage: Stage): Trip {
+    const idx = this.findRouteIdxOrElse(route.id);
+    const newRoutes = [...this.routes];
+    newRoutes[idx] = newRoutes[idx].withDeletedStage(stage);
+    return new Trip(newRoutes);
+  }
+
+  findRouteById(id: Id): Route | null {
+    return this.routes.find((route) => route.id === id) ?? null;
+  }
+
+  findStageById(id: Id): Stage | null {
+    for (const route of this.routes) {
+      const stage = route.findStageById(id);
+      if (stage !== null) return stage;
+    }
+    return null;
+  }
+
+  findWaypointById(id: Id): Waypoint | null {
+    for (const route of this.routes) {
       const waypoint = route.findWaypointById(id);
       if (waypoint !== null) return waypoint;
     }
@@ -35,7 +98,7 @@ export class Trip {
   }
 
   findSegment(func: (segment: Segment) => boolean): Segment | null {
-    for (const route of this.routes()) {
+    for (const route of this.routes) {
       const segment = route.findSegment(func);
       if (segment !== null) return segment;
     }
@@ -43,22 +106,32 @@ export class Trip {
   }
 
   nearestPoint(lngLat: LngLat): NearestPointOnLine | undefined {
-    return nearestPoint(this.routes(), lngLat);
+    return nearestPoint(this.routes, lngLat);
   }
 
   hasRoutes(): boolean {
-    return this.routes().length !== 0;
+    return this.routes.length !== 0;
   }
 
-  toJson(): TripData {
-    return { version: Trip.VERSION, routes: this.routes().map((route) => route.toJson()) };
+  toGeoJson(): GeoJSON {
+    const routesFeatures = this.routes.map((route) => route.toFeatures());
+    const waypoints = routesFeatures.flatMap((feature) => feature.waypoints);
+    const segments = routesFeatures.flatMap((feature) => feature.segments);
+    return {
+      type: 'FeatureCollection',
+      features: [...waypoints, ...segments],
+    };
   }
 
-  static fromJson(d: TripData): Trip {
+  toJson(): TripJson {
+    return { version: Trip.VERSION, routes: this.routes.map((route) => route.toJson()) };
+  }
+
+  static fromJson(d: TripJson): Trip {
     if (d.version !== Trip.VERSION)
       throw new VersionMismatchError(
         `Tried loading a trip with a different version (${d.version}) than expected (${Trip.VERSION}).`,
       );
-    return new Trip(signal(d.routes.map((route) => Route.fromJson(route))));
+    return new Trip(d.routes.map((route) => Route.fromJson(route)));
   }
 }

@@ -4,13 +4,13 @@
       this.isFlying()
         ? 'inset-shadow-flying hover:inset-shadow-flying-hover active:inset-shadow-flying-active'
         : 'hover:inset-shadow-hover active:inset-shadow-active'
-    }}"
+    }} pointer-events-auto"
     (click)="toggleFly()"
-    [disabled]="this.planner.selectedStage !== null"
+    [disabled]="this.planner.selectedStage() === null"
   >
     {{ this.isFlying() ? '🛬 Stop' : '🛫 Fly' }}
   </button>
-  <app-style-switcher class="h-20" />
+  <app-style-switcher class="h-20 pointer-events-auto" />
 </div>
 <!--<div class="bg-white rounded w-4xl p-4 grid grid-rows-4 grid-flow-col text-sm">
   <div>isDraggingSegment: {{ routeInteraction.isDraggingSegment() }}</div>
@@ -23,31 +23,7 @@
   <div>selectedWaypointId: {{ routeInteraction.selectedWaypointId() }}</div>
   <div>draggedSegment id: {{ routeInteraction.draggedSegment()?.id }}</div>
 </div>-->
-<div #routeInfo class="w-full bg-white rounded-lg shadow flex">
-  <div #routeStats class="w-fit grid grid-cols-[max-content_max-content] grid-rows-4 gap-2 p-4">
-    <div class="stat-key">length</div>
-    <div class="stat-value">
-      {{ length() }}
-      <span class="unit"> km</span>
-    </div>
-    <div class="stat-key">total asc.</div>
-    <div class="stat-value">
-      {{ totalAscent() }}
-      <span class="unit"> m</span>
-    </div>
-    <div class="stat-key">net asc.</div>
-    <div class="stat-value">
-      {{ netAscent() }}
-      <span class="unit"> m</span>
-    </div>
-    <div class="stat-key">time</div>
-    <div class="stat-value">
-      <span class="stat-value">{{ timeH() }}</span>
-      <span class="unit">h</span>
-      <span class="inline-block w-1"></span>
-      <span class="stat-value">{{ timeM() }}</span>
-      <span class="unit">m</span>
-    </div>
-  </div>
-  <app-height-map class="w-full" />
+<div #routeInfo class="w-full bg-white rounded-lg shadow flex pointer-events-auto">
+  <app-stage-stats class="w-fit"/>
+  <!--<app-height-map class="w-full" />-->
 </div>

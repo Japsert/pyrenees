@@ -11,7 +11,7 @@ export class TextField {
   placeholder = input<string>('');
   textChange = output<string>();
 
-  onInput(el: HTMLElement) {
+  onBlur(el: HTMLElement) {
     this.textChange.emit(el.innerText);
   }
 }

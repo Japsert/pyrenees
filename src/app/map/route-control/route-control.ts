@@ -22,7 +22,7 @@ export class RouteControlComponent {
   private readonly planner = inject(PlannerService);
   private readonly history = inject(HistoryService);
 
-  protected isEditing = this.interaction.isAddingWaypoints;
+  protected isAddingWaypoints = this.interaction.isAddingWaypoints;
   protected showConfirmClear = signal<boolean>(false);
 
   @HostListener('document:keydown', ['$event'])
@@ -64,7 +64,7 @@ export class RouteControlComponent {
   }
 
   canClear(): boolean {
-    return !this.planner.hasRoutes();
+    return this.planner.hasRoutes();
   }
 
   protected clear(): void {
@@ -73,7 +73,7 @@ export class RouteControlComponent {
   }
 
   @HostListener('document:mousedown')
-  protected onMousedownOutside() {
+  protected onMousedownOutside(): void {
     this.cancelClear();
   }
 
@@ -87,6 +87,10 @@ export class RouteControlComponent {
 
   protected import(): void {
     this.planner.import();
+  }
+
+  protected debug(): void {
+    console.debug(this.planner.selectedRoute(), this.planner.selectedStage());
   }
 }
 

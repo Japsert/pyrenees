@@ -1,17 +1,20 @@
 import { Component, inject, computed, effect } from '@angular/core';
 import haversine from 'haversine-distance';
-import { PlannerService } from '../../../services/planner';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
 import { SVGRenderer } from 'echarts/renderers';
 import { EChartsOption, EChartsType, ElementEvent } from 'echarts';
 import { GridComponent, TooltipComponent } from 'echarts/components';
 import { LineChart } from 'echarts/charts';
-import { MapLayersService } from '../../../services/map-layers';
-import { MapService } from '../../../services/map';
-import { LayerIds } from '../../../layer-ids.enum';
+import { LayerIds } from '../../../ids.enum';
 import { Position } from 'geojson';
-import { InteractionService } from '../../../services/interaction';
+import {
+  InteractionService,
+  MapLayersService,
+  MapService,
+  PlannerService,
+} from '../../../services';
+import { Node } from '../../../model';
 echarts.use([SVGRenderer, GridComponent, TooltipComponent, LineChart]);
 
 type DataPoint = {
@@ -31,7 +34,6 @@ export class HeightMap {
   private readonly layers = inject(MapLayersService);
   private readonly planner = inject(PlannerService);
   private readonly interaction = inject(InteractionService);
-  private readonly trip = this.planner.trip;
 
   private chart: EChartsType | null = null;
 
@@ -151,26 +153,26 @@ export class HeightMap {
     const points: DataPoint[] = [];
     let totalDistance = 0;
 
-    // TODO: add selectedRoute to TripService
-    //for (const segment of this.trip().routes()[0].stages()) {
-    //  if (!segment.track) {
-    //    totalDistance += haversine(segment.start.asLngLat(), segment.end.asLngLat());
-    //    continue;
-    //  }
+    const selectedStage = this.planner.selectedStage();
+    if (selectedStage === null) return [];
 
-    //  let prevNode: Node | null = null;
-    //  for (const node of segment.track) {
-    //    if (prevNode) {
-    //      totalDistance += haversine(prevNode.asLngLat(), node.asLngLat());
-    //    }
-    //    points.push({
-    //      distance: totalDistance,
-    //      elevation: node.elevation,
-    //      position: node.position,
-    //    });
-    //    prevNode = node;
-    //  }
-    //}
+    for (const segment of selectedStage.segments) {
+      if (!segment.track) {
+        totalDistance += haversine(segment.start.asLngLat(), segment.end.asLngLat());
+        continue;
+      }
+
+      let prevNode: Node | null = null;
+      for (const node of segment.track) {
+        if (prevNode) totalDistance += haversine(prevNode.asLngLat(), node.asLngLat());
+        points.push({
+          distance: totalDistance,
+          elevation: node.elevation,
+          position: node.position,
+        });
+        prevNode = node;
+      }
+    }
 
     return points;
   }

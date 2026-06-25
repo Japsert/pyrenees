@@ -1,23 +1,40 @@
-@for (route of routes(); track $index) {
-  <div
-    class="h-full bg-white rounded-lg flex flex-col pb-0.5"
-    (mousedown)="setSelectedRoute(route)"
-  >
-    <div class="flex justify-center text-xs text-gray-400 text-nowrap">
-      <app-text-field
-        [text]="route.name"
-        placeholder="Route name"
-        (textChange)="setRouteName(route, $event)"
-      />
+@for (route of trip().routes; track $index) {
+  <div class="h-full bg-white rounded-lg flex flex-col pb-0.5">
+    <button
+      class="flex h-5 justify-center items-center text-xs text-gray-400 text-nowrap"
+      (contextmenu)="onRouteRightClick(route, $event)"
+    >
+      {{ route.name }}
+    </button>
+    <div class="grow flex mx-1 gap-1">
+      @for (stage of route.stages; track $index) {
+        <div class="rounded-lg overflow-hidden">
+          <button
+            class="h-full px-2 border-b-[3px] border-orange-400 text-sm text-nowrap transition duration-200 {{
+              isStageSelected(stage) ? 'bg-gray-300' : 'bg-gray-100 hover:bg-gray-200'
+            }}"
+            (click)="onStageLeftClick(route, stage)"
+            (contextmenu)="onStageRightClick(route, stage, $event)"
+          >
+            {{ stage.name }}
+          </button>
+        </div>
+      } @empty {
+        <button
+          class="rounded-lg border border-dashed border-gray-200 p-1 px-2 text-sm text-gray-400 text-nowrap"
+          (click)="createStage(route)"
+          (contextmenu)="onRouteRightClick(route, $event)"
+        >
+          + Create stage
+        </button>
+      }
     </div>
-    @for (stage of route.stages(); track $index) {
-      <div class=""></div>
-    } @empty {
-      <button
-        class="grow ml-1 mr-2 rounded-lg border border-dashed border-gray-200 p-1 px-2 text-sm text-gray-400 text-nowrap"
-      >
-        + Create route
-      </button>
-    }
   </div>
+} @empty {
+  <button
+    class="h-full backdrop-blur rounded-lg border border-dashed border-white flex items-center p-1 px-2 text-sm text-white text-nowrap"
+    (click)="createRoute()"
+  >
+    + Create route
+  </button>
 }
