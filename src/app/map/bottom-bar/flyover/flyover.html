@@ -1,0 +1,11 @@
+<button
+  class="w-full h-full cursor-pointer bg-white rounded-lg transition {{
+    this.isFlying()
+      ? 'inset-shadow-flying hover:inset-shadow-flying-hover active:inset-shadow-flying-active'
+      : 'hover:inset-shadow-hover active:inset-shadow-active'
+  }} pointer-events-auto"
+  (click)="toggleFly()"
+  [disabled]="this.planner.selectedStage() === null"
+>
+  {{ this.isFlying() ? '🛬 Stop' : '🛫 Fly' }}
+</button>

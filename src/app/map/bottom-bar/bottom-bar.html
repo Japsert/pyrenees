@@ -1,15 +1,5 @@
 <div class="w-20 shrink-0 flex flex-col gap-2">
-  <button
-    class="h-10 cursor-pointer bg-white rounded-lg transition {{
-      this.isFlying()
-        ? 'inset-shadow-flying hover:inset-shadow-flying-hover active:inset-shadow-flying-active'
-        : 'hover:inset-shadow-hover active:inset-shadow-active'
-    }} pointer-events-auto"
-    (click)="toggleFly()"
-    [disabled]="this.planner.selectedStage() === null"
-  >
-    {{ this.isFlying() ? '🛬 Stop' : '🛫 Fly' }}
-  </button>
+  <app-flyover class="w-full h-10"/>
   <app-style-switcher class="h-20 pointer-events-auto" />
 </div>
 <!--<div class="bg-white rounded w-4xl p-4 grid grid-rows-4 grid-flow-col text-sm">
