@@ -185,7 +185,7 @@ export class HeightMap {
   }
 
   protected updateMarker(e: ElementEvent): void {
-    if (!this.chart) return;
+    if (!this.chart || this.planner.selectedStage() === null) return;
 
     const gridPoint = [e.offsetX, e.offsetY];
     const seriesPoint = this.chart.convertFromPixel('grid', gridPoint);

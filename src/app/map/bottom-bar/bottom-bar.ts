@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { StyleSwitcher } from "../style-switcher/style-switcher";
 import { HeightMap } from "./height-map/height-map";
 import { FlyoverService, PlannerService } from '../../services';
@@ -6,7 +6,7 @@ import { StageStats } from "./stage-stats/stage-stats";
 
 @Component({
   selector: 'app-bottom-bar',
-  imports: [StyleSwitcher, StageStats],
+  imports: [StyleSwitcher, StageStats, HeightMap],
   templateUrl: './bottom-bar.html',
 })
 export class BottomBar {
