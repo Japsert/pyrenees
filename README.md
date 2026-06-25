@@ -19,4 +19,5 @@ An interactive 3D map using Mapbox. Shows the GR10 and GR11 trails, and allows f
   - [ ] Route waypoints (shelters)
   - [x] Route splitting
   - [ ] Multiple routes
+- [ ] Dark mode
 - [ ] Improve memory usage?
