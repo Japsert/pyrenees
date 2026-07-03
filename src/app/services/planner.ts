@@ -81,8 +81,9 @@ export class PlannerService {
         }),
       )
       .subscribe(({ route, stage, segment, fc }) => {
-        const newSegment = stage.withUpdatedSegment(segment, segment.withData(fc));
-        this.updateStage(route, stage, () => newSegment);
+        this.trip.update((trip) =>
+          trip.withUpdatedSegment(route, stage, segment, (segment) => segment.withData(fc)),
+        );
         this.save();
       });
   }

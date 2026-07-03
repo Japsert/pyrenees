@@ -62,6 +62,13 @@ export class Trip {
     newRoutes[idx] = newRoutes[idx].withUpdatedStage(stage, func);
     return new Trip(newRoutes);
   }
+  
+  withUpdatedSegment(route: Route, stage: Stage, segment: Segment, func: (segment: Segment) => Segment): Trip {
+    const idx = this.findRouteIdxOrElse(route.id);
+    const newRoutes = [...this.routes];
+    newRoutes[idx] = newRoutes[idx].withUpdatedSegment(stage, segment, func);
+    return new Trip(newRoutes);
+  }
 
   withDeletedRoute(route: Route): Trip {
     const idx = this.findRouteIdxOrElse(route.id);

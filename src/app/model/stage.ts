@@ -252,11 +252,11 @@ export class Stage {
     return idx;
   }
 
-  withUpdatedSegment(segment: Segment, newSegment: Segment): Stage {
+  withUpdatedSegment(segment: Segment, func: (segment: Segment) => Segment): Stage {
     const idx = this.findSegmentIdxOrElse(segment.id);
 
     const newSegments = [...this.segments];
-    newSegments[idx] = newSegment;
+    newSegments[idx] = func(segment);
     return new Stage(
       this.id,
       this.sourceId,

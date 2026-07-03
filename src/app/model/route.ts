@@ -46,6 +46,13 @@ export class Route {
     return new Route(this.id, this.name, newStages);
   }
   
+  withUpdatedSegment(stage: Stage, segment: Segment, func: (segment: Segment) => Segment): Route {
+    const idx = this.findStageIdxOrElse(stage.id);
+    const newStages = [...this.stages];
+    newStages[idx] = newStages[idx].withUpdatedSegment(segment, func);
+    return new Route(this.id, this.name, newStages);
+  }
+  
   withDeletedStage(stage: Stage): Route {
     const idx = this.findStageIdxOrElse(stage.id);
     const newStages = [...this.stages];
