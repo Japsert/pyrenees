@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { PlannerService, FlyoverService } from '../../../services';
 
 @Component({
@@ -11,8 +11,10 @@ export class Flyover {
   private readonly flyover = inject(FlyoverService);
 
   protected isFlying = this.flyover.isFlying;
+  protected canFly = computed(() => this.planner.selectedStage() !== null);
 
-  toggleFly(): void {
+  protected toggleFly(event: MouseEvent): void {
+    event.stopPropagation();
     console.debug('selected stage:', this.planner.selectedStage());
     if (this.isFlying()) this.flyover.cancel();
     else this.flyover.begin();
