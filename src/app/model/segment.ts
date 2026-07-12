@@ -58,7 +58,11 @@ export class Segment {
     const p = feature.properties;
     const times = p['times'];
 
-    const track = coordinates.map((pos, idx) => Node.create([pos[0], pos[1]], pos[2], times[idx]));
+    let track: Node[] = [];
+    if (times !== undefined) { // leave empty if zero-length segment
+      track = coordinates.map((pos, idx) => Node.create([pos[0], pos[1]], pos[2], times[idx]));
+    }
+
     // '+' converts to number below
     const info = {
       length: +p['track-length'],

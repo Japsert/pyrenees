@@ -3,7 +3,7 @@ import { LngLat, Map as MapboxMap } from 'mapbox-gl';
 
 //#region Types
 
-export type InteractionContext = {
+export interface InteractionContext {
   beginWaypointHover(map: MapboxMap, waypointId: Id): void;
   endWaypointHover(map: MapboxMap, waypointId: Id): void;
   beginWaypointDrag(map: MapboxMap, waypointId: Id): void;
@@ -20,17 +20,17 @@ export type InteractionContext = {
   finishSegmentDrag(map: MapboxMap, segmentId: Id, lngLat: LngLat): void;
   cancelSegmentDrag(map: MapboxMap): void;
   selectSegment(map: MapboxMap, segmentId: Id): void;
-};
+}
 
 export type InteractionEvent =
   | { type: 'mouseEnterWaypoint'; waypointId: Id }
   | { type: 'mouseLeaveWaypoint'; lngLat: LngLat; segmentId: Id | undefined }
-  | { type: 'mouseDownWaypoint' }
+  | { type: 'mouseDownWaypoint'; waypointId: Id }
   | { type: 'mouseUpWaypoint'; waypointId: Id }
   | { type: 'mouseEnterSegment'; segmentId: Id; lngLat: LngLat }
   | { type: 'mouseMoveSegment'; lngLat: LngLat }
   | { type: 'mouseLeaveSegment'; lngLat: LngLat }
-  | { type: 'mouseDownSegment' }
+  | { type: 'mouseDownSegment'; segmentId: Id }
   | { type: 'mouseUpSegment'; segmentId: Id; lngLat: LngLat }
   | { type: 'mouseMove'; lngLat: LngLat }
   | { type: 'mouseUp'; lngLat: LngLat }
@@ -96,7 +96,10 @@ class HoverWaypointState implements InteractionState {
       }
       return new IdleState();
     }
-    if (event.type === 'mouseDownWaypoint') return new MayDragWaypointState(this.waypointId);
+    if (event.type === 'mouseDownWaypoint') {
+      context.selectWaypoint(map, event.waypointId);
+      return new MayDragWaypointState(this.waypointId);
+    }
     return undefined;
   }
 
@@ -197,7 +200,10 @@ class HoverSegmentState implements InteractionState {
     event: InteractionEvent,
     context: InteractionContext,
   ): InteractionState | undefined {
-    if (event.type === 'mouseDownSegment') return new MayDragSegmentState(this.segmentId);
+    if (event.type === 'mouseDownSegment') {
+      context.selectSegment(map, event.segmentId);
+      return new MayDragSegmentState(this.segmentId);
+    }
     if (event.type === 'mouseLeaveSegment') return new IdleState();
     if (event.type === 'mouseMoveSegment' || event.type === 'mouseMove')
       return new HoverSegmentState(this.segmentId, event.lngLat);
@@ -231,9 +237,7 @@ class MayDragSegmentState implements InteractionState {
     return undefined;
   }
 
-  onEnter(map: MapboxMap, context: InteractionContext): void {
-    context.selectSegment(map, this.segmentId);
-  }
+  onEnter(map: MapboxMap, context: InteractionContext): void {}
 
   onExit(map: MapboxMap, context: InteractionContext): void {}
 }

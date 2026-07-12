@@ -72,7 +72,8 @@ export class InteractionService implements InteractionContext {
       })
       .on('mousedown', LayerIds.WAYPOINTS, (e) => {
         e.preventDefault(); // prevent map pan
-        this.dispatch(map, { type: 'mouseDownWaypoint' });
+        const waypointId = (e.features?.at(0)?.properties as WaypointProperties).id;
+        this.dispatch(map, { type: 'mouseDownWaypoint', waypointId });
       })
       .on('mouseup', LayerIds.WAYPOINTS, (e) => {
         const waypointId = (e.features?.at(0)?.properties as WaypointProperties).id;
@@ -87,7 +88,8 @@ export class InteractionService implements InteractionContext {
       })
       .on('mousedown', LayerIds.SEGMENT_LINE_HITBOX, (e) => {
         e.preventDefault(); // prevent map pan
-        this.dispatch(map, { type: 'mouseDownSegment' });
+        const segmentId = (e.features?.at(0)?.properties as SegmentProperties).id;
+        this.dispatch(map, { type: 'mouseDownSegment', segmentId });
       })
       .on('mouseup', LayerIds.SEGMENT_LINE_HITBOX, (e) => {
         const segmentId = (e.features?.at(0)?.properties as SegmentProperties).id;
