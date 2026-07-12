@@ -37,6 +37,8 @@ export class InteractionService implements InteractionContext {
     }
   }
 
+  //#region Handlers
+
   addPlannerHandlers(map: MapboxMap): void {
     map
       .on('click', (e) => {
@@ -221,7 +223,6 @@ export class InteractionService implements InteractionContext {
     this.selectedWaypointId.set(null);
   }
 
-  //#endregion
   //#region Segments
 
   updateSegmentHover(map: MapboxMap, lngLat: LngLat): void {
@@ -301,6 +302,4 @@ export class InteractionService implements InteractionContext {
     if (TRSS === null) throw new Error('segment not found');
     this.planner.selectStage(TRSS.route, TRSS.stage);
   }
-
-  //#endregion
 }

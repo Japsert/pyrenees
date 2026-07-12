@@ -267,7 +267,6 @@ export class Stage {
     );
   }
 
-  //#endregion
   //#region Non-mutating methods
 
   findSegmentById(id: Id): { stage: Stage; segment: Segment } | null {
@@ -312,7 +311,6 @@ export class Stage {
     return stats;
   }
 
-  //#endregion
   //#region JSON
 
   toJson(): StageJson {

@@ -266,7 +266,6 @@ export class PlannerService {
     return this.trip().nearestPoint(lngLat);
   }
 
-  //#endregion
   //#region Serialization
 
   private save(): void {

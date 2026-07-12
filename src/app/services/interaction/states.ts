@@ -38,7 +38,6 @@ export type InteractionEvent =
   | { type: 'keyEscape' }
   | { type: 'mouseClickOutside' };
 
-//#endregion
 //#region Interface
 
 export interface InteractionState {
@@ -59,7 +58,6 @@ export interface InteractionState {
   onExit(map: MapboxMap, context: InteractionContext): void;
 }
 
-//#endregion
 //#region IdleState
 
 export class IdleState implements InteractionState {
@@ -81,7 +79,6 @@ export class IdleState implements InteractionState {
   onExit(map: MapboxMap, context: InteractionContext): void {}
 }
 
-//#endregion
 //#region HoverWaypointState
 
 class HoverWaypointState implements InteractionState {
@@ -112,7 +109,6 @@ class HoverWaypointState implements InteractionState {
   }
 }
 
-//#endregion
 //#region MayDragWaypointState
 
 class MayDragWaypointState implements InteractionState {
@@ -140,7 +136,6 @@ class MayDragWaypointState implements InteractionState {
   onExit(map: MapboxMap, context: InteractionContext): void {}
 }
 
-//#endregion
 //#region DragWaypointState
 
 class DragWaypointState implements InteractionState {
@@ -188,7 +183,6 @@ class DragWaypointState implements InteractionState {
   onExit(map: MapboxMap, context: InteractionContext): void {}
 }
 
-//#endregion
 //#region HoverSegmentState
 
 class HoverSegmentState implements InteractionState {
@@ -220,7 +214,6 @@ class HoverSegmentState implements InteractionState {
   }
 }
 
-//#endregion
 //#region MayDragSegmentState
 
 class MayDragSegmentState implements InteractionState {
@@ -245,7 +238,6 @@ class MayDragSegmentState implements InteractionState {
   onExit(map: MapboxMap, context: InteractionContext): void {}
 }
 
-//#endregion
 //#region DragSegmentState
 
 class DragSegmentState implements InteractionState {
@@ -283,5 +275,3 @@ class DragSegmentState implements InteractionState {
 
   onExit(map: MapboxMap, context: InteractionContext): void {}
 }
-
-//#endregion
