@@ -1,12 +1,12 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Map as MapboxMap, LngLat } from 'mapbox-gl';
 import { Position } from 'geojson';
-import { PlannerService } from './planner';
-import { ease, Id } from '../util';
-import { MapLayersService } from './layers';
-import { LayerIds, SourceIds } from '../ids.enum';
-import { CursorService } from './cursor';
-import { WaypointProperties, SegmentProperties } from '../model';
+import { PlannerService } from '../planner';
+import { ease, Id } from '../../util';
+import { MapLayersService } from '../layers';
+import { LayerIds, SourceIds } from '../../ids.enum';
+import { CursorService } from '../cursor';
+import { WaypointProperties, SegmentProperties } from '../../model';
 import { IdleState, InteractionContext, InteractionEvent, InteractionState } from './states';
 
 @Injectable({

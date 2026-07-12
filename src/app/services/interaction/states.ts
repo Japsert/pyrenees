@@ -1,4 +1,4 @@
-import { Id } from '../util';
+import { Id } from '../../util';
 import { LngLat, Map as MapboxMap } from 'mapbox-gl';
 
 //#region Types

@@ -20,7 +20,7 @@ import { MapStyle } from '../style.enum';
 import { RouteControl } from '../map/route-control/route-control';
 import { PlannerService } from './planner';
 import { MapLayersService } from './layers';
-import { InteractionService } from './interaction';
+import { InteractionService } from './interaction/interaction';
 import { CursorService } from './cursor';
 import { Trip } from '../model';
 import { SourceIds } from '../ids.enum';
