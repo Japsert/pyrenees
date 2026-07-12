@@ -41,7 +41,7 @@ body {
   cursor: var(--map-cursor) !important;
 }
 
-/* Make sure all buttons have the right cursor, the one to add a new route did not for some reason */
+/* Make sure all buttons have the right cursor; Tailwind v4 Preflight defaults buttons to cursor: default */
 
 @layer base {
   button:not(:disabled),

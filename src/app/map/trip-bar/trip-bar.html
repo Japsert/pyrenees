@@ -15,6 +15,7 @@
             }}"
             (click)="onStageLeftClick(route, stage)"
             (contextmenu)="onStageRightClick(route, stage, $event)"
+            [style.view-transition-name]="stage.id === newStageId() ? 'stage-morph-' + route.id : null"
           >
             {{ stage.name }}
           </button>
@@ -23,15 +24,16 @@
           <button
             type="button"
             id="create-stage-button"
-            class="w-0 overflow-hidden -ml-1 transition-all"
+            class="w-0 rounded border-dashed border-gray-200 overflow-hidden -ml-1 px-0 transition-all text-white text-sm text-nowrap"
             (click)="createStage(route)"
+            [style.view-transition-name]="stageIsMorphing(route) ? null : 'stage-morph-' + route.id"
           >
             +
           </button>
         }
       } @empty {
         <button
-          class="rounded-md border border-dashed border-gray-200 p-1 px-2 text-sm text-gray-400 text-nowrap"
+          class="rounded-md border-2 border-dashed border-gray-200 p-1 px-2 text-sm text-gray-400 text-nowrap"
           (click)="createStage(route)"
           (contextmenu)="onRouteRightClick(route, $event)"
         >
