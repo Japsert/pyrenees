@@ -1,16 +1,16 @@
 @for (route of trip().routes; track $index) {
-  <div class="h-full bg-white rounded-lg flex flex-col pb-0.5">
+  <div class="h-full bg-white rounded-lg flex flex-col pb-0.75">
     <button
       class="flex h-5 justify-center items-center text-xs text-gray-400 text-nowrap"
       (contextmenu)="onRouteRightClick(route, $event)"
     >
       {{ route.name }}
     </button>
-    <div class="grow flex mx-1 gap-1">
-      @for (stage of route.stages; track $index) {
-        <div class="rounded-lg overflow-hidden">
+    <div class="grow flex mx-0.75 gap-1">
+      @for (stage of route.stages; track $index; let isLast = $last) {
+        <div class="rounded-md overflow-hidden">
           <button
-            class="h-full px-2 border-b-[3px] border-orange-400 text-sm text-nowrap transition duration-200 {{
+            class="h-7.5 px-2 border-b-[3px] border-orange-400 text-sm text-nowrap transition duration-200 {{
               isStageSelected(stage) ? 'bg-gray-300' : 'bg-gray-100 hover:bg-gray-200'
             }}"
             (click)="onStageLeftClick(route, stage)"
@@ -19,9 +19,19 @@
             {{ stage.name }}
           </button>
         </div>
+        @if (isLast) {
+          <button
+            type="button"
+            id="create-stage-button"
+            class="w-0 overflow-hidden -ml-1 transition-all"
+            (click)="createStage(route)"
+          >
+            +
+          </button>
+        }
       } @empty {
         <button
-          class="rounded-lg border border-dashed border-gray-200 p-1 px-2 text-sm text-gray-400 text-nowrap"
+          class="rounded-md border border-dashed border-gray-200 p-1 px-2 text-sm text-gray-400 text-nowrap"
           (click)="createStage(route)"
           (contextmenu)="onRouteRightClick(route, $event)"
         >

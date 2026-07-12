@@ -1,16 +1,37 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { InteractionService, PlannerService } from '../../services';
 import { Route, Stage } from '../../model';
 
 @Component({
   selector: 'app-trip-bar',
   templateUrl: './trip-bar.html',
+  styleUrl: './trip-bar.css',
 })
-export class TripBar {
+export class TripBar implements OnInit {
   private readonly planner = inject(PlannerService);
   private readonly interaction = inject(InteractionService);
 
   protected trip = this.planner.trip;
+
+  ngOnInit(): void {
+    document.addEventListener('mousemove', (e) => {
+      const button = document.getElementById('create-stage-button');
+      if (!button) return;
+
+      const rect = button.getBoundingClientRect();
+      const buttonX = rect.left + rect.width / 2;
+      const buttonY = rect.top + rect.height / 2;
+
+      const distance = Math.sqrt((e.clientX - buttonX) ** 2 + (e.clientY - buttonY) ** 2);
+      console.debug(distance)
+
+      if (distance < 50) {
+        button.classList.add('mouse-is-near');
+      } else {
+        button.classList.remove('mouse-is-near');
+      }
+    });
+  }
 
   protected isStageSelected(stage: Stage): boolean {
     return this.planner.selectedStage() === stage;

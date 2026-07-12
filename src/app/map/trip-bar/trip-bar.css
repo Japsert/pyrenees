@@ -1,0 +1,10 @@
+#create-stage-button {
+  width: 0;
+  overflow: hidden;
+  margin-left: -4px;
+}
+
+#create-stage-button.mouse-is-near {
+  width: fit-content;
+  margin-left: 0;
+}
