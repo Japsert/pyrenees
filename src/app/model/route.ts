@@ -45,14 +45,14 @@ export class Route {
     newStages[idx] = func(stage);
     return new Route(this.id, this.name, newStages);
   }
-  
+
   withUpdatedSegment(stage: Stage, segment: Segment, func: (segment: Segment) => Segment): Route {
     const idx = this.findStageIdxOrElse(stage.id);
     const newStages = [...this.stages];
     newStages[idx] = newStages[idx].withUpdatedSegment(segment, func);
     return new Route(this.id, this.name, newStages);
   }
-  
+
   withDeletedStage(stage: Stage): Route {
     const idx = this.findStageIdxOrElse(stage.id);
     const newStages = [...this.stages];
@@ -66,15 +66,25 @@ export class Route {
     if (idx === -1) throw new Error('Stage not found in stages array!');
     return idx;
   }
-  
+
   findStageById(id: Id): Stage | null {
     return this.stages.find((stage) => stage.id === id) ?? null;
   }
 
-  findWaypointById(id: Id): Waypoint | null {
+  findSegmentById(id: Id): { route: Route; stage: Stage; segment: Segment } | null {
     for (const stage of this.stages) {
-      const waypoint = stage.findWaypointById(id);
-      if (waypoint !== null) return waypoint;
+      const SS = stage.findSegmentById(id); // stage, segment
+      if (SS !== null) return { route: this, ...SS };
+    }
+    return null;
+  }
+
+  findWaypointById(
+    id: Id,
+  ): { route: Route; stage: Stage; segment: Segment | null; waypoint: Waypoint } | null {
+    for (const stage of this.stages) {
+      const SSW = stage.findWaypointById(id); // stage, segment, waypoint
+      if (SSW !== null) return { route: this, ...SSW };
     }
     return null;
   }

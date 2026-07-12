@@ -62,8 +62,13 @@ export class Trip {
     newRoutes[idx] = newRoutes[idx].withUpdatedStage(stage, func);
     return new Trip(newRoutes);
   }
-  
-  withUpdatedSegment(route: Route, stage: Stage, segment: Segment, func: (segment: Segment) => Segment): Trip {
+
+  withUpdatedSegment(
+    route: Route,
+    stage: Stage,
+    segment: Segment,
+    func: (segment: Segment) => Segment,
+  ): Trip {
     const idx = this.findRouteIdxOrElse(route.id);
     const newRoutes = [...this.routes];
     newRoutes[idx] = newRoutes[idx].withUpdatedSegment(stage, segment, func);
@@ -96,10 +101,24 @@ export class Trip {
     return null;
   }
 
-  findWaypointById(id: Id): Waypoint | null {
+  findSegmentById(id: Id): { trip: Trip; route: Route; stage: Stage; segment: Segment } | null {
     for (const route of this.routes) {
-      const waypoint = route.findWaypointById(id);
-      if (waypoint !== null) return waypoint;
+      const RSS = route.findSegmentById(id); // route, stage, segment
+      if (RSS !== null) return { trip: this, ...RSS };
+    }
+    return null;
+  }
+
+  findWaypointById(id: Id): {
+    trip: Trip;
+    route: Route;
+    stage: Stage;
+    segment: Segment | null;
+    waypoint: Waypoint;
+  } | null {
+    for (const route of this.routes) {
+      const RSSW = route.findWaypointById(id); // route, stage, segment, waypoint
+      if (RSSW !== null) return { trip: this, ...RSSW };
     }
     return null;
   }

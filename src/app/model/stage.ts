@@ -270,12 +270,19 @@ export class Stage {
   //#endregion
   //#region Non-mutating methods
 
-  findWaypointById(id: Id): Waypoint | null {
-    if (this.initialWaypoint?.id === id) return this.initialWaypoint;
+  findSegmentById(id: Id): { stage: Stage; segment: Segment } | null {
+    const segment = this.segments.find((segment) => segment.id === id) ?? null;
+    if (segment === null) return null;
+    return { stage: this, segment };
+  }
+
+  findWaypointById(id: Id): { stage: Stage; segment: Segment | null; waypoint: Waypoint } | null {
+    if (this.initialWaypoint?.id === id)
+      return { stage: this, segment: null, waypoint: this.initialWaypoint };
 
     for (const segment of this.segments) {
-      const waypoint = segment.findWaypoint(id);
-      if (waypoint !== null) return waypoint;
+      const SW = segment.findWaypointById(id); // segment, waypoint
+      if (SW !== null) return { stage: this, ...SW };
     }
     return null;
   }

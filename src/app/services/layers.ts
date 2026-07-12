@@ -123,7 +123,7 @@ export class MapLayersService {
         promoteId: 'id',
       })
       .addLayer({
-        id: LayerIds.ROUTE_LINE,
+        id: LayerIds.SEGMENT_LINE,
         type: 'line',
         source: SourceIds.TRIP,
         filter: ['==', '$type', 'LineString'],
@@ -133,11 +133,11 @@ export class MapLayersService {
         },
         paint: {
           'line-color': ['get', 'color'],
-          'line-width': 3,
+          'line-width': 5,
         },
       })
       .addLayer({
-        id: LayerIds.ROUTE_LINE_HITBOX,
+        id: LayerIds.SEGMENT_LINE_HITBOX,
         type: 'line',
         source: SourceIds.TRIP,
         filter: ['==', '$type', 'LineString'],
@@ -309,7 +309,7 @@ export class MapLayersService {
   }
 
   private addRouteHoverCursorLayer(map: MapboxMap): void {
-    map.addSource(LayerIds.ROUTE_HOVER_CURSOR, {
+    map.addSource(LayerIds.SEGMENT_HOVER_CURSOR, {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
@@ -317,9 +317,9 @@ export class MapLayersService {
       },
     });
     map.addLayer({
-      id: LayerIds.ROUTE_HOVER_CURSOR,
+      id: LayerIds.SEGMENT_HOVER_CURSOR,
       type: 'circle',
-      source: LayerIds.ROUTE_HOVER_CURSOR,
+      source: LayerIds.SEGMENT_HOVER_CURSOR,
       layout: {
         visibility: 'none',
       },

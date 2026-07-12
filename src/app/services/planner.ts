@@ -98,6 +98,10 @@ export class PlannerService {
     return this.trip().findStageById(id);
   }
 
+  findSegmentById(id: Id): { trip: Trip; route: Route; stage: Stage; segment: Segment } | null {
+    return this.trip().findSegmentById(id);
+  }
+
   selectRoute(route: Route): void {
     this.selectedRouteId.set(route.id);
     console.debug('selected route:', route);
@@ -189,13 +193,13 @@ export class PlannerService {
     if (segment) this.routeSegment(selectedRoute, newStage, segment);
   }
 
-  moveWaypoint(id: string, newPos: Position): void {
+  moveWaypoint(waypointId: Id, newPos: Position): void {
     const selectedRoute = this.selectedRoute();
     const selectedStage = this.selectedStage();
     if (selectedRoute === null || selectedStage === null)
       throw new Error('Either no route or no stage selected!');
 
-    const [newStage, newSegments] = selectedStage.withMovedWaypoint(id, newPos);
+    const [newStage, newSegments] = selectedStage.withMovedWaypoint(waypointId, newPos);
     this.updateSelectedStage(newStage);
     if (newSegments) {
       const { prevSegment, nextSegment } = newSegments;
@@ -204,7 +208,7 @@ export class PlannerService {
     }
   }
 
-  deleteWaypoint(id: string): void {
+  deleteWaypoint(id: Id): void {
     const selectedRoute = this.selectedRoute();
     const selectedStage = this.selectedStage();
     if (selectedRoute === null || selectedStage === null)
@@ -215,7 +219,13 @@ export class PlannerService {
     if (maybeSegment) this.routeSegment(selectedRoute, newStage, maybeSegment);
   }
 
-  findWaypointById(id: string): Waypoint | null {
+  findWaypointById(id: Id): {
+    trip: Trip;
+    route: Route;
+    stage: Stage;
+    segment: Segment | null;
+    waypoint: Waypoint;
+  } | null {
     return this.trip().findWaypointById(id);
   }
 

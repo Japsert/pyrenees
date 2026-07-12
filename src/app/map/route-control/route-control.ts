@@ -22,7 +22,7 @@ export class RouteControlComponent {
   private readonly planner = inject(PlannerService);
   private readonly history = inject(HistoryService);
 
-  protected isAddingWaypoints = this.interaction.isAddingWaypoints;
+  protected isEditingRoute = this.interaction.isEditingRoute;
   protected showConfirmClear = signal<boolean>(false);
 
   @HostListener('document:keydown', ['$event'])

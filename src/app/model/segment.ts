@@ -3,12 +3,12 @@ import { generateId, Id } from '../util';
 import { Waypoint, Node, WaypointJson, NodeJson } from '.';
 
 export type SegmentJson = {
-  id: Id,
-  start: WaypointJson,
-  end: WaypointJson,
-  track: NodeJson[] | undefined,
-  info: SegmentInfo | undefined,
-}
+  id: Id;
+  start: WaypointJson;
+  end: WaypointJson;
+  track: NodeJson[] | undefined;
+  info: SegmentInfo | undefined;
+};
 
 export type SegmentProperties = {
   id: Id;
@@ -69,9 +69,9 @@ export class Segment {
     return new Segment(this.id, this.start, this.end, track, info);
   }
 
-  findWaypoint(id: Id): Waypoint | null {
-    if (this.start.id === id) return this.start;
-    if (this.end.id === id) return this.end;
+  findWaypointById(id: Id): { segment: Segment; waypoint: Waypoint } | null {
+    if (this.start.id === id) return { segment: this, waypoint: this.start };
+    if (this.end.id === id) return { segment: this, waypoint: this.end };
     return null;
   }
 
@@ -82,7 +82,7 @@ export class Segment {
       end: this.end.toJson(),
       track: this.track?.map((node) => node.toJson()),
       info: this.info,
-    }
+    };
   }
 
   static fromJson(data: SegmentJson): Segment {
@@ -92,6 +92,6 @@ export class Segment {
       Waypoint.fromJson(data.end),
       data.track?.map((node) => Node.fromJson(node)),
       data.info,
-    )
+    );
   }
 }
