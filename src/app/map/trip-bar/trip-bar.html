@@ -7,30 +7,23 @@
       {{ route.name }}
     </button>
     <div class="grow flex mx-0.75 gap-1">
-      @for (stage of route.stages; track $index; let isLast = $last) {
-        <div class="rounded-md overflow-hidden">
+      @for (stage of route.stages; track $index) {
+        <div
+          class="rounded-md overflow-hidden"
+          [attr.data-stage-id]="stage.id"
+          (animate.enter)="onStageEnter($event)"
+          (animate.leave)="onStageLeave($event)"
+        >
           <button
             class="h-7.5 px-2 border-b-[3px] border-orange-400 text-sm text-nowrap transition duration-200 {{
               isStageSelected(stage) ? 'bg-gray-300' : 'bg-gray-100 hover:bg-gray-200'
             }}"
             (click)="onStageLeftClick(route, stage)"
             (contextmenu)="onStageRightClick(route, stage, $event)"
-            [style.view-transition-name]="stage.id === newStageId() ? 'stage-morph-' + route.id : null"
           >
             {{ stage.name }}
           </button>
         </div>
-        @if (isLast) {
-          <button
-            type="button"
-            id="create-stage-button"
-            class="w-0 rounded border-dashed border-gray-200 overflow-hidden -ml-1 px-0 transition-all text-white text-sm text-nowrap"
-            (click)="createStage(route)"
-            [style.view-transition-name]="stageIsMorphing(route) ? null : 'stage-morph-' + route.id"
-          >
-            +
-          </button>
-        }
       } @empty {
         <button
           class="rounded-md border-2 border-dashed border-gray-200 p-1 px-2 text-sm text-gray-400 text-nowrap"
@@ -38,6 +31,16 @@
           (contextmenu)="onRouteRightClick(route, $event)"
         >
           + Create stage
+        </button>
+      }
+      @if (route.stages.length > 0) {
+        <button
+          type="button"
+          id="create-stage-button"
+          class="w-0 rounded border-dashed border-gray-200 overflow-hidden -ml-1 px-0 transition-all text-white text-sm text-nowrap"
+          (click)="createStage(route)"
+        >
+          +
         </button>
       }
     </div>

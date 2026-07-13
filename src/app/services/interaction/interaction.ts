@@ -127,6 +127,11 @@ export class InteractionService implements InteractionContext {
     this.cursor.set('adding-waypoint', true);
   }
 
+  turnAddingWaypointsOff(): void {
+    this.isEditingRoute.set(false);
+    this.cursor.set('adding-waypoint', false);
+  }
+
   toggleAddingWaypoints(): void {
     this.isEditingRoute.update((bool) => !bool);
     this.cursor.set('adding-waypoint', this.isEditingRoute());
