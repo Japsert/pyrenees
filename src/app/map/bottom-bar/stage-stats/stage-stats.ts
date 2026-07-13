@@ -10,8 +10,16 @@ import { PlannerService } from '../../../services';
 export class StageStats {
   private readonly planner = inject(PlannerService);
 
+  private readonly selectedRoute = this.planner.selectedRoute;
   private readonly selectedStage = this.planner.selectedStage;
-  private readonly routeStats = computed(() => this.selectedStage()?.getStats());
+  private readonly routeStats = computed(() => {
+    const stage = this.selectedStage();
+    if (stage !== null) return stage.getStats();
+    const route = this.selectedRoute();
+    if (route !== null) return route.getStats();
+    return null;
+  }
+  );
   protected readonly length = computed(() => ((this.routeStats()?.length ?? 0) / 1000).toFixed(2));
   protected readonly totalAscent = computed(() => this.routeStats()?.totalAscend);
   protected readonly netAscent = computed(() => this.routeStats()?.netAscend);

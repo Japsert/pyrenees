@@ -14,7 +14,7 @@ import {
   MapService,
   PlannerService,
 } from '../../../services';
-import { Node } from '../../../model';
+import { Node, Route, Stage } from '../../../model';
 echarts.use([SVGRenderer, GridComponent, TooltipComponent, LineChart]);
 
 type DataPoint = {
@@ -22,6 +22,8 @@ type DataPoint = {
   elevation: number;
   position: Position;
 };
+type StageChartData = DataPoint[];
+type RouteChartData = StageChartData[];
 
 @Component({
   selector: 'app-height-map',
@@ -34,6 +36,8 @@ export class HeightMap {
   private readonly layers = inject(MapLayersService);
   private readonly planner = inject(PlannerService);
   private readonly interaction = inject(InteractionService);
+
+  //#region Chart setup
 
   private chart: EChartsType | null = null;
 
@@ -135,12 +139,6 @@ export class HeightMap {
     },
   };
 
-  private readonly data = computed(() => this.buildChartData());
-
-  protected readonly updateOptions = computed<EChartsOption>(() => ({
-    series: { data: this.data().map((d) => [d.distance, d.elevation]) },
-  }));
-
   constructor() {
     effect(() => {
       const idx = this.interaction.routeHoverIdx();
@@ -149,14 +147,28 @@ export class HeightMap {
     });
   }
 
-  private buildChartData(): DataPoint[] {
-    const points: DataPoint[] = [];
-    let totalDistance = 0;
+  //#region Data
 
+  private readonly data = computed(() => this.buildChartData());
+  private readonly flatData = computed(() => this.data().flat());
+
+  protected readonly updateOptions = computed<EChartsOption>(() => ({
+    series: { data: this.flatData().map((d) => [d.distance, d.elevation]) },
+  }));
+
+  private buildChartData(): RouteChartData {
     const selectedStage = this.planner.selectedStage();
-    if (selectedStage === null) return [];
+    if (selectedStage !== null) return [this.buildStageData(selectedStage)];
+    const selectedRoute = this.planner.selectedRoute();
+    if (selectedRoute !== null) return this.buildRouteData(selectedRoute);
+    return [];
+  }
 
-    for (const segment of selectedStage.segments) {
+  private buildStageData(stage: Stage, startDistance?: number): StageChartData {
+    const points: DataPoint[] = [];
+    let totalDistance = startDistance ?? 0;
+
+    for (const segment of stage.segments) {
       if (!segment.track) {
         totalDistance += haversine(segment.start.asLngLat(), segment.end.asLngLat());
         continue;
@@ -177,6 +189,21 @@ export class HeightMap {
     return points;
   }
 
+  private buildRouteData(route: Route): RouteChartData {
+    const stages: StageChartData[] = [];
+    let startDistance = 0;
+
+    for (const stage of route.stages) {
+      const stageData = this.buildStageData(stage, startDistance);
+      startDistance += stageData.at(-1)?.distance ?? 0;
+      stages.push(stageData);
+    }
+
+    return stages;
+  }
+
+  //#region Interaction
+
   protected onChartInit(chart: EChartsType): void {
     this.chart = chart;
 
@@ -190,8 +217,8 @@ export class HeightMap {
     const gridPoint = [e.offsetX, e.offsetY];
     const seriesPoint = this.chart.convertFromPixel('grid', gridPoint);
     const distance = seriesPoint[0];
-    const idx = this.findClosestIndex(this.data(), distance);
-    const targetItem = this.data().at(idx);
+    const idx = this.findClosestIndex(this.flatData(), distance);
+    const targetItem = this.flatData().at(idx);
 
     if (!targetItem) return console.warn(`No valid data point found for distance ${distance}!`);
     this.layers.setLayerData(this.map.getActiveMap(), LayerIds.CHART_MARKER, {

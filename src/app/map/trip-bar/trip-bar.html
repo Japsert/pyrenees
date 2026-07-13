@@ -1,55 +1,73 @@
-@for (route of trip().routes; track $index) {
-  <div class="h-full bg-white rounded-lg flex flex-col pb-0.75">
-    <button
-      class="flex h-5 justify-center items-center text-xs text-gray-400 text-nowrap"
-      (contextmenu)="onRouteRightClick(route, $event)"
+<div class="relative h-full flex gap-2 items-center">
+  @for (route of trip().routes; track $index) {
+    <div
+      class="route h-full bg-white/90 rounded-lg flex flex-col pb-0.75 overflow-hidden"
+      [attr.data-route-id]="route.id"
+      (animate.enter)="onEnter($event, 'route')"
+      (animate.leave)="onLeave($event, 'route')"
     >
-      {{ route.name }}
-    </button>
-    <div class="grow flex mx-0.75 gap-1">
-      @for (stage of route.stages; track $index) {
-        <div
-          class="rounded-md overflow-hidden"
-          [attr.data-stage-id]="stage.id"
-          (animate.enter)="onStageEnter($event)"
-          (animate.leave)="onStageLeave($event)"
-        >
-          <button
-            class="h-7.5 px-2 border-b-[3px] border-orange-400 text-sm text-nowrap transition duration-200 {{
-              isStageSelected(stage) ? 'bg-gray-300' : 'bg-gray-100 hover:bg-gray-200'
-            }}"
-            (click)="onStageLeftClick(route, stage)"
-            (contextmenu)="onStageRightClick(route, stage, $event)"
+      <button
+        class="flex h-5 justify-center items-center text-xs text-gray-400 text-nowrap"
+        (contextmenu)="onRouteRightClick(route, $event)"
+      >
+        {{ route.name }}
+      </button>
+      <div class="relative grow flex mx-0.75 gap-1">
+        @for (stage of route.stages; track $index) {
+          <div
+            class="rounded-md overflow-hidden"
+            [attr.data-stage-id]="stage.id"
+            (animate.enter)="onEnter($event, 'stage')"
+            (animate.leave)="onLeave($event, 'stage')"
           >
-            {{ stage.name }}
+            <button
+              class="h-7.5 px-2 border-b-[3px] border-orange-400 text-sm text-nowrap transition duration-200 {{
+                isStageSelected(stage) ? 'bg-gray-300' : 'bg-gray-100 hover:bg-gray-200'
+              }}"
+              (click)="onStageLeftClick(route, stage)"
+              (contextmenu)="onStageRightClick(route, stage, $event)"
+            >
+              {{ stage.name }}
+            </button>
+          </div>
+        } @empty {
+          <button
+            class="h-7.5 rounded-md border-2 border-dashed border-gray-200 overflow-hidden px-2 text-sm text-gray-400 text-nowrap"
+            (click)="createStage(route)"
+            (contextmenu)="onRouteRightClick(route, $event)"
+            (animate.enter)="onEmptyEnter($event, 'stage')"
+          >
+            + Create stage
           </button>
-        </div>
-      } @empty {
-        <button
-          class="rounded-md border-2 border-dashed border-gray-200 p-1 px-2 text-sm text-gray-400 text-nowrap"
-          (click)="createStage(route)"
-          (contextmenu)="onRouteRightClick(route, $event)"
-        >
-          + Create stage
-        </button>
-      }
-      @if (route.stages.length > 0) {
-        <button
-          type="button"
-          id="create-stage-button"
-          class="w-0 rounded border-dashed border-gray-200 overflow-hidden -ml-1 px-0 transition-all text-white text-sm text-nowrap"
-          (click)="createStage(route)"
-        >
-          +
-        </button>
-      }
+        }
+        @if (route.stages.length > 0) {
+          <button
+            type="button"
+            class="create-stage-button w-0 rounded border-dashed border-gray-200 overflow-hidden -ml-1 px-0 transition-all text-white text-sm text-nowrap"
+            (click)="createStage(route)"
+          >
+            +
+          </button>
+        }
+      </div>
     </div>
-  </div>
-} @empty {
-  <button
-    class="h-full backdrop-blur rounded-lg border border-dashed border-white flex items-center p-1 px-2 text-sm text-white text-nowrap"
-    (click)="createRoute()"
-  >
-    + Create route
-  </button>
-}
+  } @empty {
+    <button
+      class="h-full backdrop-blur bg-white/80 rounded-lg border border-dashed border-white overflow-hidden flex items-center p-1 px-2 text-sm text-nowrap"
+      (click)="createRoute()"
+      (animate.enter)="onEmptyEnter($event, 'route')"
+    >
+      + Create route
+    </button>
+  }
+  @if (trip().routes.length > 0) {
+    <button
+      type="button"
+      id="create-route-button"
+      class="w-4 h-8 opacity-0 bg-white rounded text-sm transition-opacity duration-200"
+      (click)="createRoute()"
+    >
+      +
+    </button>
+  }
+</div>

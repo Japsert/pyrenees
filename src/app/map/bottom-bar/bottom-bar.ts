@@ -3,7 +3,7 @@ import { StyleSwitcher } from '../style-switcher/style-switcher';
 import { HeightMap } from './height-map/height-map';
 import { StageStats } from './stage-stats/stage-stats';
 import { Flyover } from './flyover/flyover';
-import { InteractionService } from '../../services';
+import { PlannerService } from '../../services';
 
 @Component({
   selector: 'app-bottom-bar',
@@ -12,4 +12,5 @@ import { InteractionService } from '../../services';
 })
 export class BottomBar {
   //protected readonly interaction = inject(InteractionService);
+  protected readonly planner = inject(PlannerService);
 }

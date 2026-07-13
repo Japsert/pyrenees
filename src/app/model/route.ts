@@ -1,4 +1,12 @@
-import { Segment, SegmentProperties, Stage, StageJson, Waypoint, WaypointProperties } from '.';
+import {
+  Segment,
+  SegmentProperties,
+  Stage,
+  StageJson,
+  StageStats,
+  Waypoint,
+  WaypointProperties,
+} from '.';
 import { LngLat } from 'mapbox-gl';
 import { NearestPointOnLine } from '../services';
 import { generateId, Id, nearestPoint } from '../util';
@@ -16,6 +24,8 @@ type RouteFeatures = {
   waypoints: WaypointFeature[];
   segments: SegmentFeature[];
 };
+
+export type RouteStats = StageStats;
 
 export class Route {
   private constructor(
@@ -99,6 +109,26 @@ export class Route {
 
   nearestPoint(lngLat: LngLat): NearestPointOnLine | undefined {
     return nearestPoint(this.stages, lngLat);
+  }
+
+  getStats(): RouteStats | null {
+    const stats = {
+      length: 0,
+      totalAscend: 0,
+      netAscend: 0,
+      time: 0,
+    } satisfies RouteStats;
+
+    for (const stage of this.stages) {
+      const stageStats = stage.getStats();
+      if (!stageStats) return null;
+      stats.length += stageStats.length;
+      stats.totalAscend += stageStats.totalAscend;
+      stats.netAscend += stageStats.netAscend;
+      stats.time += stageStats.time;
+    }
+
+    return stats;
   }
 
   toJson(): RouteJson {

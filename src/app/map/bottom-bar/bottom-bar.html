@@ -6,7 +6,15 @@
   <div>current state: {{ interaction.state().mode }}</div>
   <div>selected waypoint id: {{ interaction.selectedWaypointId() }}</div>
 </div>-->
-<div #routeInfo class="w-full bg-white rounded-lg shadow flex pointer-events-auto">
-  <app-stage-stats class="w-fit" />
-  <app-height-map class="w-full" />
+<div class="w-full bg-white/90 rounded-lg shadow flex pointer-events-auto">
+  @if (planner.selectedRoute() !== null || planner.selectedStage() !== null) {
+    <app-stage-stats class="w-fit" />
+    <app-height-map class="w-full" />
+  } @else {
+    <div class="w-full flex items-center justify-center">
+      <span class="text-gray-400 text-sm"
+        >Select a route or stage to see its information here.</span
+      >
+    </div>
+  }
 </div>
