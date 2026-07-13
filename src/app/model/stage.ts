@@ -11,6 +11,7 @@ import {
   WaypointProperties,
   Node,
   SegmentJson,
+  WaypointJson,
 } from '.';
 import { NearestPointOnLine } from '../services';
 import { Color, color } from 'use-color';
@@ -20,7 +21,7 @@ export type StageJson = {
   version: number;
   sourceId: Id;
   name: string;
-  initialWaypoint: Waypoint | null;
+  initialWaypoint: WaypointJson | null;
   segments: SegmentJson[];
 };
 
@@ -319,7 +320,7 @@ export class Stage {
       id: this.id,
       sourceId: this.sourceId,
       name: this.name,
-      initialWaypoint: this.initialWaypoint,
+      initialWaypoint: this.initialWaypoint?.toJson() ?? null,
       segments: this.segments.map((segment) => segment.toJson()),
     };
   }
@@ -334,7 +335,7 @@ export class Stage {
       data.sourceId,
       data.name,
       Stage.DEFAULT_COLOR,
-      data.initialWaypoint,
+      data.initialWaypoint !== null ? Waypoint.fromJson(data.initialWaypoint) : null,
       data.segments.map((segment) => Segment.fromJson(segment)),
     );
   }
