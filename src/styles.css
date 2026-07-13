@@ -21,7 +21,11 @@ body {
   padding: 0;
 }
 
-/* Overriding Mapbox's default control styling */
+/* Overriding Mapbox's default styling */
+
+.mapboxgl-map {
+  @apply font-sans!;
+}
 
 .mapboxgl-ctrl button[aria-pressed='true']:not(:disabled) {
   background-color: #ccc;
