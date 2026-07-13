@@ -59,7 +59,8 @@ export class Segment {
     const times = p['times'];
 
     let track: Node[] = [];
-    if (times !== undefined) { // leave empty if zero-length segment
+    // leave empty if zero-length segment
+    if (times !== undefined) {
       track = coordinates.map((pos, idx) => Node.create([pos[0], pos[1]], pos[2], times[idx]));
     }
 

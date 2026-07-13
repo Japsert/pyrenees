@@ -1,8 +1,14 @@
-<div #map1Container id="map1-container" class="transition-opacity duration-(--style-switch-transition-duration)"></div>
-<div #map2Container id="map2-container" class="transition-opacity duration-(--style-switch-transition-duration)"></div>
-<div class="absolute bottom-0 w-full flex flex-col pointer-events-none">
-  <app-trip-bar class="ml-2 mr-2 h-(--trip-bar-height) w-min pointer-events-auto" />
-  <app-bottom-bar
-    class="relative m-(--bottom-bar-margin) h-(--bottom-bar-height) flex gap-2"
-  />
+<div
+  #map1Container
+  id="map1-container"
+  class="transition-opacity duration-(--style-switch-transition-duration)"
+></div>
+<div
+  #map2Container
+  id="map2-container"
+  class="transition-opacity duration-(--style-switch-transition-duration)"
+></div>
+<div class="pointer-events-none absolute bottom-0 flex w-full flex-col">
+  <app-trip-bar class="pointer-events-auto mr-2 ml-2 h-(--trip-bar-height) w-min" />
+  <app-bottom-bar class="relative m-(--bottom-bar-margin) flex h-(--bottom-bar-height) gap-2" />
 </div>

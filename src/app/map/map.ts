@@ -1,14 +1,7 @@
-import {
-  Component,
-  ElementRef,
-  OnDestroy,
-  OnInit,
-  ViewChild,
-  inject,
-} from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { MapService } from '../services/map';
-import { BottomBar } from "./bottom-bar/bottom-bar";
-import { TripBar } from "./trip-bar/trip-bar";
+import { BottomBar } from './bottom-bar/bottom-bar';
+import { TripBar } from './trip-bar/trip-bar';
 
 @Component({
   selector: 'app-map',

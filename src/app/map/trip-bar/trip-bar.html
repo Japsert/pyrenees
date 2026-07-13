@@ -1,21 +1,21 @@
-<div class="relative h-full flex gap-2 items-center">
+<div class="relative flex h-full items-center gap-2">
   @for (route of trip().routes; track $index) {
     <div
-      class="route h-full bg-white/90 rounded-lg flex flex-col pb-0.75 overflow-hidden"
+      class="route flex h-full flex-col overflow-hidden rounded-lg bg-white/90 pb-0.75"
       [attr.data-route-id]="route.id"
       (animate.enter)="onEnter($event, 'route')"
       (animate.leave)="onLeave($event, 'route')"
     >
       <button
-        class="flex h-5 justify-center items-center text-xs text-gray-400 text-nowrap"
+        class="flex h-5 items-center justify-center text-xs text-nowrap text-gray-400"
         (contextmenu)="onRouteRightClick(route, $event)"
       >
         {{ route.name }}
       </button>
-      <div class="relative grow flex mx-0.75 gap-1">
+      <div class="relative mx-0.75 flex grow gap-1">
         @for (stage of route.stages; track $index) {
           <div
-            class="rounded-md overflow-hidden"
+            class="overflow-hidden rounded-md"
             [attr.data-stage-id]="stage.id"
             (animate.enter)="onEnter($event, 'stage')"
             (animate.leave)="onLeave($event, 'stage')"
@@ -32,7 +32,7 @@
           </div>
         } @empty {
           <button
-            class="h-7.5 rounded-md border-2 border-dashed border-gray-200 overflow-hidden px-2 text-sm text-gray-400 text-nowrap"
+            class="h-7.5 overflow-hidden rounded-md border-2 border-dashed border-gray-200 px-2 text-sm text-nowrap text-gray-400"
             (click)="createStage(route)"
             (contextmenu)="onRouteRightClick(route, $event)"
             (animate.enter)="onEmptyEnter($event, 'stage')"
@@ -43,7 +43,7 @@
         @if (route.stages.length > 0) {
           <button
             type="button"
-            class="create-stage-button w-0 rounded border-dashed border-gray-200 overflow-hidden -ml-1 px-0 transition-all text-white text-sm text-nowrap"
+            class="create-stage-button -ml-1 w-0 overflow-hidden rounded border-dashed border-gray-200 px-0 text-sm text-nowrap text-white transition-all"
             (click)="createStage(route)"
           >
             +
@@ -53,7 +53,7 @@
     </div>
   } @empty {
     <button
-      class="h-full backdrop-blur bg-white/80 rounded-lg border border-dashed border-white overflow-hidden flex items-center p-1 px-2 text-sm text-nowrap"
+      class="flex h-full items-center overflow-hidden rounded-lg border border-dashed border-white bg-white/80 p-1 px-2 text-sm text-nowrap backdrop-blur"
       (click)="createRoute()"
       (animate.enter)="onEmptyEnter($event, 'route')"
     >
@@ -64,7 +64,7 @@
     <button
       type="button"
       id="create-route-button"
-      class="w-4 h-8 opacity-0 bg-white rounded text-sm transition-opacity duration-200"
+      class="h-8 w-4 rounded bg-white text-sm opacity-0 transition-opacity duration-200"
       (click)="createRoute()"
     >
       +

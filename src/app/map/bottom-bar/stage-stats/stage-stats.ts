@@ -18,8 +18,7 @@ export class StageStats {
     const route = this.selectedRoute();
     if (route !== null) return route.getStats();
     return null;
-  }
-  );
+  });
   protected readonly length = computed(() => ((this.routeStats()?.length ?? 0) / 1000).toFixed(2));
   protected readonly totalAscent = computed(() => this.routeStats()?.totalAscend);
   protected readonly netAscent = computed(() => this.routeStats()?.netAscend);

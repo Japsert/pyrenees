@@ -19,7 +19,7 @@ const CURSOR_STYLE: Record<CursorReason, string> = {
 })
 export class CursorService {
   private readonly activeReasons = new Set<CursorReason>(['default']);
-  
+
   set(reason: CursorReason, active: boolean): void {
     if (active) this.activeReasons.add(reason);
     else this.activeReasons.delete(reason);

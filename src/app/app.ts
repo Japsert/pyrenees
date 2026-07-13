@@ -3,10 +3,8 @@ import { Map } from './map/map';
 
 @Component({
   selector: 'app-root',
-  imports: [
-    Map
-],
-  templateUrl: './app.html'
+  imports: [Map],
+  templateUrl: './app.html',
 })
 export class App {
   protected readonly title = signal('pyrenees');

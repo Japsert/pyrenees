@@ -51,8 +51,7 @@ export class FlyoverService {
 
   begin(): void {
     const selectedStage = this.planner.selectedStage();
-    if (!selectedStage)
-      throw new Error('Flyover starting but no stage is selected!');
+    if (!selectedStage) throw new Error('Flyover starting but no stage is selected!');
 
     const lineString = selectedStage.toLineString();
     this.start(lineString);

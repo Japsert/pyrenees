@@ -1,7 +1,7 @@
 export enum SourceIds {
   TRIP = 'trip',
   GR10 = 'gr10-tileset',
-  GR11 = 'gr11-tileset'
+  GR11 = 'gr11-tileset',
 }
 
 export enum LayerIds {

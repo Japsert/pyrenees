@@ -6,7 +6,7 @@
     🗑️
   </button>
   @if (showConfirmClear()) {
-    <div class="absolute top-1/2 -translate-y-1/2 right-full mr-4">
+    <div class="absolute top-1/2 right-full mr-4 -translate-y-1/2">
       <app-confirm-clear (confirmed)="clear()" (cancelled)="cancelClear()" />
     </div>
   }
