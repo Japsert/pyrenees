@@ -22,7 +22,7 @@
           >
             <button
               class="h-7.5 px-2 border-b-[3px] border-orange-400 text-sm text-nowrap transition duration-200 {{
-                isStageSelected(stage) ? 'bg-gray-300' : 'bg-gray-100 hover:bg-gray-200'
+                isStageSelected(stage) ? 'bg-gray-300/90' : 'bg-gray-100/90 hover:bg-gray-200/90'
               }}"
               (click)="onStageLeftClick(route, stage)"
               (contextmenu)="onStageRightClick(route, stage, $event)"
@@ -53,7 +53,7 @@
     </div>
   } @empty {
     <button
-      class="flex h-full items-center overflow-hidden rounded-lg border border-dashed border-white bg-white/80 p-1 px-2 text-sm text-nowrap backdrop-blur"
+      class="flex h-full items-center overflow-hidden rounded-lg border border-dashed border-white bg-white/80 p-1 px-2 text-sm text-nowrap"
       (click)="createRoute()"
       (animate.enter)="onEmptyEnter($event, 'route')"
     >
@@ -64,7 +64,7 @@
     <button
       type="button"
       id="create-route-button"
-      class="h-8 w-4 rounded bg-white text-sm opacity-0 transition-opacity duration-200"
+      class="h-8 w-4 rounded bg-white/90 text-sm opacity-0 transition-opacity duration-200"
       (click)="createRoute()"
     >
       +
