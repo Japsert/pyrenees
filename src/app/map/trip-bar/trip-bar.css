@@ -1,13 +1,5 @@
 @reference "tailwindcss";
 
-.route:hover .create-stage-button.mouse-is-near {
-  @apply w-5 ml-0 px-1 text-gray-400;
-}
-
-.create-stage-button:hover {
-  @apply w-7.5 border-2;
-}
-
 #create-route-button.mouse-is-near {
   @apply opacity-100;
 }

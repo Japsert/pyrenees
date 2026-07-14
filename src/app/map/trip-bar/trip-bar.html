@@ -1,61 +1,15 @@
 <div class="relative flex h-full items-center gap-2">
-  @for (route of trip().routes; track $index) {
-    <div
-      class="route flex h-full flex-col overflow-hidden rounded-lg bg-white/90 pb-0.75"
-      [attr.data-route-id]="route.id"
-      (animate.enter)="onEnter($event, 'route')"
-      (animate.leave)="onLeave($event, 'route')"
-    >
-      <button
-        class="flex h-5 items-center justify-center text-xs text-nowrap text-gray-400"
-        (contextmenu)="onRouteRightClick(route, $event)"
-      >
-        {{ route.name }}
-      </button>
-      <div class="relative mx-0.75 flex grow gap-1">
-        @for (stage of route.stages; track $index) {
-          <div
-            class="overflow-hidden rounded-md"
-            [attr.data-stage-id]="stage.id"
-            (animate.enter)="onEnter($event, 'stage')"
-            (animate.leave)="onLeave($event, 'stage')"
-          >
-            <button
-              class="h-7.5 px-2 border-b-[3px] border-orange-400 text-sm text-nowrap transition duration-200 {{
-                isStageSelected(stage) ? 'bg-gray-300/90' : 'bg-gray-100/90 hover:bg-gray-200/90'
-              }}"
-              (click)="onStageLeftClick(route, stage)"
-              (contextmenu)="onStageRightClick(route, stage, $event)"
-            >
-              {{ stage.name }}
-            </button>
-          </div>
-        } @empty {
-          <button
-            class="h-7.5 overflow-hidden rounded-md border-2 border-dashed border-gray-200 px-2 text-sm text-nowrap text-gray-400"
-            (click)="createStage(route)"
-            (contextmenu)="onRouteRightClick(route, $event)"
-            (animate.enter)="onEmptyEnter($event, 'stage')"
-          >
-            + Create stage
-          </button>
-        }
-        @if (route.stages.length > 0) {
-          <button
-            type="button"
-            class="create-stage-button -ml-1 w-0 overflow-hidden rounded border-dashed border-gray-200 px-0 text-sm text-nowrap text-white transition-all"
-            (click)="createStage(route)"
-          >
-            +
-          </button>
-        }
-      </div>
-    </div>
+  @for (route of trip().routes; track route.id) {
+    <app-route
+      [route]="route"
+      [renderedOnce]="renderedOnce()"
+      [isOnly]="trip().routes.length === 1"
+    />
   } @empty {
     <button
       class="flex h-full items-center overflow-hidden rounded-lg border border-dashed border-white bg-white/80 p-1 px-2 text-sm text-nowrap"
       (click)="createRoute()"
-      (animate.enter)="onEmptyEnter($event, 'route')"
+      (animate.enter)="onEmptyEnter($event)"
     >
       + Create route
     </button>
