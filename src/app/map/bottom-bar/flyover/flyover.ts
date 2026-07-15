@@ -15,7 +15,6 @@ export class Flyover {
 
   protected toggleFly(event: MouseEvent): void {
     event.stopPropagation();
-    console.debug('selected stage:', this.planner.selectedStage());
     if (this.isFlying()) this.flyover.cancel();
     else this.flyover.begin();
   }

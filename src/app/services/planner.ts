@@ -56,7 +56,6 @@ export class PlannerService {
 
     // Load trip from local storage
     try {
-      console.debug('loading trip');
       this.load();
     } catch (error) {
       console.log('Error during loading from local storage:', error);
@@ -104,23 +103,19 @@ export class PlannerService {
 
   selectRoute(route: Route): void {
     this.selectedRouteId.set(route.id);
-    console.debug('selected route:', route);
   }
 
   selectStage(route: Route, stage: Stage): void {
     this.selectRoute(route);
     this.selectedStageId.set(stage.id);
-    console.debug('selected stage:', stage);
   }
 
   deselectRoute(): void {
     this.selectedRouteId.set(null);
-    console.debug('deselected route');
   }
 
   deselectStage(): void {
     this.selectedStageId.set(null);
-    console.debug('deselected stage');
   }
 
   addRoute(): void {
@@ -155,10 +150,6 @@ export class PlannerService {
     // TODO: remove sanity check
     if (this.selectedStageId() !== newStage.id) throw new Error('this should never happen');
     this.selectedStageId.set(newStage.id);
-    console.debug(
-      'updated selected stage id after updating selected stage. new selectedStage:',
-      this.selectedStage(),
-    );
   }
 
   updateStage(route: Route, stage: Stage, func: (stage: Stage) => Stage): void {
@@ -178,7 +169,6 @@ export class PlannerService {
     this.history.commit();
     this.trip.update((trip) => trip.withDeletedStage(route, stage));
     if (this.selectedStage() === stage) this.deselectStage();
-    console.debug('selected stage is now', this.selectedStage());
     this.save();
   }
 
@@ -258,7 +248,6 @@ export class PlannerService {
   }
 
   private routeSegment(route: Route, stage: Stage, segment: Segment): void {
-    console.debug('routeSegment called:', route, stage, segment);
     this.apiCall.next({ route, stage, segment });
   }
 

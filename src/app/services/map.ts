@@ -62,7 +62,6 @@ export class MapService {
       const outdoorMap = this.outdoorMap();
       const satelliteMap = this.satelliteMap();
       const trip = this.planner.trip();
-      //console.debug('either map, or trip updated. redrawing trip');
       if (outdoorMap !== null) this.redrawTrip(outdoorMap, trip);
       if (satelliteMap !== null) this.redrawTrip(satelliteMap, trip);
     });
@@ -79,10 +78,6 @@ export class MapService {
     this.addControls(outdoorMap);
     this.addMapHandlers(outdoorMap);
     this.interaction.addPlannerHandlers(outdoorMap);
-
-    console.debug(BOTTOM_BAR_HEIGHT_PX, BOTTOM_BAR_MARGIN_PX, STYLE_SWITCH_TRANSITION_DURATION_MS);
-
-    outdoorMap.on('error', (e) => console.error('outdoor map error:', e.error));
 
     outdoorMap.once('load', () => {
       this.layers.addAllLayers(outdoorMap);
