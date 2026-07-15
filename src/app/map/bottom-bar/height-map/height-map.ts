@@ -266,12 +266,12 @@ export class HeightMap {
   protected onChartInit(chart: EChartsType): void {
     this.chart = chart;
 
-    this.chart.getZr().on('mousemove', (e) => this.updateMarker(e));
+    this.chart.getZr().on('mousemove', (e) => this.updateMapMarker(e));
     this.chart.getZr().on('mouseout', () => this.clearMarker());
   }
 
-  protected updateMarker(e: ElementEvent): void {
-    if (!this.chart || this.planner.selectedStage() === null) return;
+  protected updateMapMarker(e: ElementEvent): void {
+    if (this.chart === null || this.planner.selectedRoute() === null) return;
 
     const gridPoint = [e.offsetX, e.offsetY];
     const seriesPoint = this.chart.convertFromPixel('grid', gridPoint);
