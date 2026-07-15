@@ -1,4 +1,4 @@
-import { Component, inject, computed, effect } from '@angular/core';
+import { Component, inject, computed, effect, signal, DestroyRef } from '@angular/core';
 import haversine from 'haversine-distance';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -25,6 +25,39 @@ type DataPoint = {
 type StageChartData = DataPoint[];
 type RouteChartData = StageChartData[];
 
+type Palette = {
+  text: string;
+  axis: string;
+  split: string;
+  pointer: string;
+  emphasisBorder: string;
+  tooltipBg: string;
+  tooltipBorder: string;
+  tooltipText: string;
+};
+
+const LIGHT_PALETTE: Palette = {
+  text: '#333',
+  axis: '#d0d0d0',
+  split: '#e0e0e0',
+  pointer: '#b0b0b0',
+  emphasisBorder: '#fff',
+  tooltipBg: '#ffffff',
+  tooltipBorder: '#d0d0d0',
+  tooltipText: '#333',
+};
+
+const DARK_PALETTE: Palette = {
+  text: '#d4d4d4',
+  axis: '#5c5c5c',
+  split: '#444444',
+  pointer: '#808080',
+  emphasisBorder: '#2e2e2e',
+  tooltipBg: '#2a2a2a',
+  tooltipBorder: '#5a5a5a',
+  tooltipText: '#e5e5e5',
+};
+
 @Component({
   selector: 'app-height-map',
   imports: [NgxEchartsDirective],
@@ -41,105 +74,131 @@ export class HeightMap {
 
   private chart: EChartsType | null = null;
 
+  private readonly prefersDark = signal(matchMedia('(prefers-color-scheme: dark)').matches);
+  private readonly palette = computed<Palette>(() =>
+    this.prefersDark() ? DARK_PALETTE : LIGHT_PALETTE,
+  );
+
   protected readonly initOptions = { renderer: 'svg' };
-  protected readonly options: EChartsOption = {
-    textStyle: {
-      fontFamily:
-        'ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
-      fontSize: 15,
-    },
-    grid: { left: 50, right: 20, top: 20, bottom: 30 },
+  protected readonly options: EChartsOption = this.buildOptions(this.palette());
 
-    xAxis: {
-      type: 'value',
-      boundaryGap: [0, 0],
-      max(extent) {
-        return Math.ceil(extent.max);
+  private buildOptions(p: Palette): EChartsOption {
+    return {
+      textStyle: {
+        color: p.text,
+        fontFamily:
+          'ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
+        fontSize: 15,
       },
-      axisLine: {
-        show: true,
-        lineStyle: { width: 2, color: '#d0d0d0' },
-      },
-      splitLine: {
-        show: true,
-        lineStyle: { width: 2, color: '#e0e0e0' },
-      },
-      axisTick: {
-        lineStyle: { width: 2, color: '#d0d0d0' },
-      },
-      axisLabel: {
-        formatter: (v: number) => {
-          if (v < 1000) {
-            return `${v} m`;
-          }
-          const km = v / 1000;
-          return km % 1 === 0 ? `${km} km` : `${km.toFixed(1)} km`;
+      grid: { left: 50, right: 20, top: 20, bottom: 30 },
+
+      xAxis: {
+        type: 'value',
+        boundaryGap: [0, 0],
+        max(extent) {
+          return Math.ceil(extent.max);
+        },
+        axisLine: {
+          show: true,
+          lineStyle: { width: 2, color: p.axis },
+        },
+        splitLine: {
+          show: true,
+          lineStyle: { width: 2, color: p.split },
+        },
+        axisTick: {
+          lineStyle: { width: 2, color: p.axis },
+        },
+        axisLabel: {
+          color: p.text,
+          formatter: (v: number) => {
+            if (v < 1000) {
+              return `${v} m`;
+            }
+            const km = v / 1000;
+            return km % 1 === 0 ? `${km} km` : `${km.toFixed(1)} km`;
+          },
         },
       },
-    },
 
-    yAxis: {
-      type: 'value',
-      min(extent) {
-        return Math.floor(extent.min / 100) * 100;
+      yAxis: {
+        type: 'value',
+        min(extent) {
+          return Math.floor(extent.min / 100) * 100;
+        },
+        max(extent) {
+          return Math.ceil(extent.max / 100) * 100;
+        },
+        interval: 99999999,
+        axisLine: {
+          show: true,
+          lineStyle: { width: 2, color: p.axis },
+        },
+        splitLine: {
+          show: true,
+          lineStyle: { width: 2, color: p.split },
+        },
+        axisTick: {
+          lineStyle: { width: 2, color: p.axis },
+        },
+        axisLabel: {
+          color: p.text,
+          formatter: (v: number) => `${Math.round(v)}m`,
+        },
       },
-      max(extent) {
-        return Math.ceil(extent.max / 100) * 100;
-      },
-      interval: 99999999,
-      axisLine: {
-        show: true,
-        lineStyle: { width: 2, color: '#d0d0d0' },
-      },
-      splitLine: {
-        show: true,
-        lineStyle: { width: 2, color: '#e0e0e0' },
-      },
-      axisTick: {
-        lineStyle: { width: 2, color: '#d0d0d0' },
-      },
-      axisLabel: {
-        formatter: (v: number) => `${Math.round(v)}m`,
-      },
-    },
 
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: {
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: p.tooltipBg,
+        borderColor: p.tooltipBorder,
+        borderWidth: 1,
+        textStyle: { color: p.tooltipText },
+        axisPointer: {
+          type: 'line',
+          snap: true,
+          lineStyle: { width: 1, color: p.pointer },
+        },
+        formatter(params: any) {
+          const x = `distance: ${Math.round(params[0].axisValue)} m`;
+          const y = `elevation: ${Math.round(params[0].value[1])} m`;
+          return `${x}<br/>${y}`;
+        },
+      },
+
+      series: {
+        name: 'elevation',
         type: 'line',
-        snap: true,
-        lineStyle: { width: 1, color: '#b0b0b0' },
-      },
-      formatter(params: any) {
-        const x = `distance: ${Math.round(params[0].axisValue)} m`;
-        const y = `elevation: ${Math.round(params[0].value[1])} m`;
-        return `${x}<br/>${y}`;
-      },
-    },
-
-    series: {
-      name: 'elevation',
-      type: 'line',
-      smooth: true,
-      symbol: 'circle',
-      symbolSize: 10,
-      areaStyle: { opacity: 0.1 },
-      lineStyle: { color: '#ffa500', width: 2 },
-      itemStyle: { opacity: 0, color: '#f80' },
-      triggerEvent: true,
-      animation: false,
-      emphasis: {
-        itemStyle: {
-          opacity: 1,
-          color: '#f80',
-          borderWidth: 1,
-          borderColor: '#fff',
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 10,
+        areaStyle: { opacity: 0.1 },
+        lineStyle: { color: '#ffa500', width: 2 },
+        itemStyle: { opacity: 0, color: '#f80' },
+        triggerEvent: true,
+        animation: false,
+        emphasis: {
+          itemStyle: {
+            opacity: 1,
+            color: '#f80',
+            borderWidth: 1,
+            borderColor: p.emphasisBorder,
+          },
         },
       },
-    },
-  };
+    };
+  }
 
   constructor() {
+    const media = matchMedia('(prefers-color-scheme: dark)');
+    const onChange = (e: MediaQueryListEvent) => this.prefersDark.set(e.matches);
+    media.addEventListener('change', onChange);
+    inject(DestroyRef).onDestroy(() => media.removeEventListener('change', onChange));
+
+    effect(() => {
+      const options = this.buildOptions(this.palette());
+      this.chart?.setOption(options);
+    });
+
     effect(() => {
       const idx = this.interaction.routeHoverIdx();
       if (idx === null) this.clearHighlight();
