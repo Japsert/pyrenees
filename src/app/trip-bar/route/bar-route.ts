@@ -1,6 +1,6 @@
 import { AnimationCallbackEvent, Component, inject, input, OnInit } from '@angular/core';
-import { Route } from '../../../model';
-import { InteractionService, PlannerService } from '../../../services';
+import { Route } from '../../model';
+import { InteractionService, PlannerService } from '../../services';
 import { BarStage } from '../stage/bar-stage';
 
 @Component({

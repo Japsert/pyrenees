@@ -1,4 +1,4 @@
-@reference '../../../../styles.css';
+@reference '../../../styles.css';
 
 .stat-key {
   @apply flex items-center justify-end text-sm font-light text-neutral-500 dark:text-neutral-400;

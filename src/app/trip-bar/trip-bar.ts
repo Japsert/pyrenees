@@ -6,7 +6,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { PlannerService } from '../../services';
+import { PlannerService } from '../services';
 import { BarRoute } from './route/bar-route';
 
 @Component({

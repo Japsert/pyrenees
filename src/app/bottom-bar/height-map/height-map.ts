@@ -6,15 +6,15 @@ import { SVGRenderer } from 'echarts/renderers';
 import { EChartsOption, EChartsType, ElementEvent } from 'echarts';
 import { GridComponent, TooltipComponent } from 'echarts/components';
 import { LineChart } from 'echarts/charts';
-import { LayerIds } from '../../../ids.enum';
+import { LayerIds } from '../../ids.enum';
 import { Position } from 'geojson';
 import {
   InteractionService,
   MapLayersService,
   MapService,
   PlannerService,
-} from '../../../services';
-import { Node, Route, Stage } from '../../../model';
+} from '../../services';
+import { Node, Route, Stage } from '../../model';
 echarts.use([SVGRenderer, GridComponent, TooltipComponent, LineChart]);
 
 type DataPoint = {

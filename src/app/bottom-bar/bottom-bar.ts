@@ -3,7 +3,7 @@ import { StyleSwitcher } from './style-switcher/style-switcher';
 import { HeightMap } from './height-map/height-map';
 import { StageStats } from './stage-stats/stage-stats';
 import { Flyover } from './flyover/flyover';
-import { PlannerService } from '../../services';
+import { PlannerService } from '../services';
 
 @Component({
   selector: 'app-bottom-bar',

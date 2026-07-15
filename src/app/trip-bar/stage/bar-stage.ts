@@ -1,6 +1,6 @@
 import { AnimationCallbackEvent, Component, inject, input } from '@angular/core';
-import { Route, Stage } from '../../../model';
-import { InteractionService, MenuService, PlannerService } from '../../../services';
+import { Route, Stage } from '../../model';
+import { InteractionService, MenuService, PlannerService } from '../../services';
 
 @Component({
   selector: 'app-stage',

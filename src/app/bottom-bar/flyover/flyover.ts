@@ -1,5 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
-import { PlannerService, FlyoverService } from '../../../services';
+import { PlannerService, FlyoverService } from '../../services';
 
 @Component({
   selector: 'app-flyover',
