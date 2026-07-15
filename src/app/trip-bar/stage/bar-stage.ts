@@ -1,6 +1,6 @@
 import { AnimationCallbackEvent, Component, inject, input } from '@angular/core';
 import { Route, Stage } from '../../../model';
-import { InteractionService, PlannerService } from '../../../services';
+import { InteractionService, MenuService, PlannerService } from '../../../services';
 
 @Component({
   selector: 'app-stage',
@@ -20,6 +20,7 @@ export class BarStage {
 
   private readonly planner = inject(PlannerService);
   private readonly interaction = inject(InteractionService);
+  private readonly menu = inject(MenuService);
 
   protected onEnter(event: AnimationCallbackEvent): void {
     if (!this.renderedOnce()) return event.animationComplete();
@@ -74,10 +75,9 @@ export class BarStage {
 
   protected onStageRightClick(route: Route, stage: Stage, event: MouseEvent): void {
     event.preventDefault();
-    // TODO: show context menu (and select) instead of deleting
-    this.interaction.turnAddingWaypointsOff();
-    this.planner.deleteStage(route, stage);
+    this.menu.openStageContextMenu(route, stage, { x: event.clientX, y: event.clientY });
   }
+
   protected setStageName(route: Route, stage: Stage, name: string): void {
     this.planner.updateStage(route, stage, (stage) => stage.withName(name));
   }

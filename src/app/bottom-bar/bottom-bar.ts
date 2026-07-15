@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { StyleSwitcher } from '../style-switcher/style-switcher';
+import { StyleSwitcher } from './style-switcher/style-switcher';
 import { HeightMap } from './height-map/height-map';
 import { StageStats } from './stage-stats/stage-stats';
 import { Flyover } from './flyover/flyover';

@@ -1,9 +1,9 @@
 <button
-  class="w-full h-full cursor-pointer bg-ui dark:bg-ui-dark rounded-lg transition {{
+  class="w-full h-full cursor-pointer bg-ui dark:bg-ui-dark text-neutral-800 dark:text-neutral-200 rounded-lg transition {{
     isFlying()
       ? 'inset-shadow-flying hover:inset-shadow-flying-hover active:inset-shadow-flying-active'
       : 'hover:inset-shadow-hover active:inset-shadow-active'
-  }} pointer-events-auto disabled:text-gray-600 disabled:cursor-not-allowed"
+  }} pointer-events-auto disabled:cursor-not-allowed"
   (click)="toggleFly($event)"
   [disabled]="!canFly()"
 >
