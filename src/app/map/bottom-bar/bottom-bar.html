@@ -6,7 +6,7 @@
   <div>current state: {{ interaction.state().mode }}</div>
   <div>selected waypoint id: {{ interaction.selectedWaypointId() }}</div>
 </div>-->
-<div class="pointer-events-auto flex w-full rounded-lg bg-ui dark:bg-ui-dark shadow">
+<div class="bg-ui dark:bg-ui-dark pointer-events-auto flex w-full rounded-lg shadow">
   @if (planner.selectedRoute() !== null || planner.selectedStage() !== null) {
     <app-stage-stats class="w-fit" />
     <app-height-map class="w-full" />

@@ -3,5 +3,5 @@
 [contenteditable]:empty::before,
 [contenteditable]:has(> br:only-child)::before {
   content: attr(data-placeholder);
-  @apply italic text-gray-300;
+  @apply text-gray-300 italic;
 }

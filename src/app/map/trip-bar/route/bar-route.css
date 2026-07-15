@@ -1,7 +1,7 @@
 @reference "tailwindcss";
 
 .route:hover .create-stage-button.mouse-is-near {
-  @apply w-5 ml-0 px-1 text-gray-400;
+  @apply ml-0 w-5 px-1 text-gray-400;
 }
 
 .create-stage-button:hover {

@@ -52,7 +52,7 @@
   > .control:not(:has(button:disabled)):hover {
     @apply bg-neutral-200 dark:bg-neutral-600;
   }
-  
+
   button:disabled,
   > .control:disabled {
     @apply text-black/25 dark:text-black/40;
