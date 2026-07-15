@@ -84,6 +84,22 @@ export class BarRoute implements OnInit {
     }
   }
 
+  protected isRouteSelected(route: Route): boolean {
+    return this.planner.selectedRoute() === route;
+  }
+
+  protected onRouteLeftClick(route: Route): void {
+    if (this.isRouteSelected(route)) {
+      if (this.planner.selectedStage() !== null) {
+        this.planner.deselectStage();
+        return;
+      }
+      this.planner.deselectRoute();
+      return;
+    }
+    this.planner.selectRoute(route);
+  }
+
   protected onRouteRightClick(route: Route, event: MouseEvent): void {
     event.preventDefault();
     // TODO: show context menu (and select) instead of deleting
