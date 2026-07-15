@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MapService } from '../../services/map';
 import { MapStyle } from '../../style.enum';
 
@@ -10,9 +10,9 @@ import { MapStyle } from '../../style.enum';
 export class StyleSwitcher {
   private readonly mapService = inject(MapService);
 
-  protected currentStyleColor = computed(() =>
-    this.mapService.activeStyle() === MapStyle.OUTDOOR ? 'bg-amber-50' : 'bg-green-800',
-  );
+  protected isStyleOutdoor(): boolean {
+    return this.mapService.activeStyle() === MapStyle.OUTDOOR;
+  }
 
   switchStyle() {
     this.mapService.switchStyle();

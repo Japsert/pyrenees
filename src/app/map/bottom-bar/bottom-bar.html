@@ -2,17 +2,17 @@
   <app-flyover class="h-10 w-full" />
   <app-style-switcher class="pointer-events-auto h-20" />
 </div>
-<!--<div class="bg-white rounded-lg w-4xl p-4 grid grid-rows-4 grid-flow-col text-sm">
+<!--<div class="bg-ui dark:bg-ui-dark rounded-lg w-4xl p-4 grid grid-rows-4 grid-flow-col text-sm">
   <div>current state: {{ interaction.state().mode }}</div>
   <div>selected waypoint id: {{ interaction.selectedWaypointId() }}</div>
 </div>-->
-<div class="pointer-events-auto flex w-full rounded-lg bg-white/90 shadow">
+<div class="pointer-events-auto flex w-full rounded-lg bg-ui dark:bg-ui-dark shadow">
   @if (planner.selectedRoute() !== null || planner.selectedStage() !== null) {
     <app-stage-stats class="w-fit" />
     <app-height-map class="w-full" />
   } @else {
     <div class="flex w-full items-center justify-center">
-      <span class="text-sm text-gray-400"
+      <span class="text-sm text-neutral-400 dark:text-neutral-400"
         >Select a route or stage to see its information here.</span
       >
     </div>

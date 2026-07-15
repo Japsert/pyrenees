@@ -7,7 +7,7 @@
     />
   } @empty {
     <button
-      class="flex h-full items-center overflow-hidden rounded-lg border border-dashed border-white bg-white/80 p-1 px-2 text-sm text-nowrap"
+      class="bg-ui dark:bg-ui-dark flex h-full items-center overflow-hidden rounded-lg border border-dashed border-neutral-200 p-1 px-2 text-sm text-nowrap dark:border-neutral-700 text-neutral-800 dark:text-neutral-200"
       (click)="createRoute()"
       (animate.enter)="onEmptyEnter($event)"
     >
@@ -18,7 +18,7 @@
     <button
       type="button"
       id="create-route-button"
-      class="h-8 w-4 rounded bg-white/90 text-sm opacity-0 transition-opacity duration-200"
+      class="bg-ui dark:bg-ui-dark h-8 w-4 rounded text-sm text-neutral-800 opacity-0 transition-opacity duration-200 dark:text-neutral-200"
       (click)="createRoute()"
     >
       +

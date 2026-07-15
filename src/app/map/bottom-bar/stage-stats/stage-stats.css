@@ -1,17 +1,13 @@
+@reference '../../../../styles.css';
+
 .stat-key {
-  display: flex;
-  font-weight: 300;
-  color: oklch(70% 0 0);
-  align-items: center;
-  justify-content: right;
+  @apply flex items-center justify-end text-sm font-light text-neutral-500 dark:text-neutral-400;
 }
 
 .stat-value {
-  display: flex;
-  align-items: center;
-  justify-content: left;
+  @apply flex items-center justify-start text-sm text-neutral-800 dark:text-neutral-300;
 }
 
 .unit {
-  color: oklch(70% 0 0);
+  @apply text-sm text-neutral-500 dark:text-neutral-400;
 }

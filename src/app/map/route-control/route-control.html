@@ -1,8 +1,29 @@
-<button title="Undo" (click)="undo()" [disabled]="!canUndo()">↩</button>
-<button title="Redo" (click)="redo()" [disabled]="!canRedo()">↪</button>
-<button title="Edit route" (click)="edit()" [attr.aria-pressed]="isEditingRoute()">✏️</button>
-<div class="relative inline-block border-t border-t-[#ddd]" (mousedown)="$event.stopPropagation()">
-  <button title="Clear route" (click)="toggleShowConfirmClear()" [disabled]="!canClear()">
+<button
+  title="Undo"
+  (click)="undo()"
+  [disabled]="!canUndo()"
+  class="control transition duration-100"
+>
+  ↩
+</button>
+<button
+  title="Redo"
+  (click)="redo()"
+  [disabled]="!canRedo()"
+  class="control transition duration-100"
+>
+  ↪
+</button>
+<button title="Edit route" (click)="edit()" [attr.aria-pressed]="isEditingRoute()" class="control">
+  ✏️
+</button>
+<div (mousedown)="$event.stopPropagation()" class="control relative inline-block">
+  <button
+    title="Clear route"
+    (click)="toggleShowConfirmClear()"
+    [disabled]="!canClear()"
+    class="transition duration-100"
+  >
     🗑️
   </button>
   @if (showConfirmClear()) {
@@ -11,6 +32,6 @@
     </div>
   }
 </div>
-<button title="Export" (click)="export()" class="border-t! border-t-[#ddd]!">📤</button>
-<button title="Import" (click)="import()">📥</button>
-<button title="Debug" (click)="debug()">🐛</button>
+<button title="Export" (click)="export()" class="control">📤</button>
+<button title="Import" (click)="import()" class="control">📥</button>
+<button title="Debug" (click)="debug()" class="control">🐛</button>

@@ -1,6 +1,6 @@
-<div class="route flex h-full flex-col overflow-hidden rounded-lg bg-white/90 pb-0.75">
+<div class="route flex h-full flex-col overflow-hidden rounded-lg bg-ui dark:bg-ui-dark pb-0.75">
   <button
-    class="flex h-5 items-center justify-center text-xs text-nowrap text-gray-400"
+    class="flex h-5 items-center justify-center text-xs text-nowrap text-neutral-400 dark:text-neutral-300"
     (contextmenu)="onRouteRightClick(route(), $event)"
   >
     {{ route().name }}
@@ -15,7 +15,7 @@
       />
     } @empty {
       <button
-        class="h-7.5 overflow-hidden rounded-md border-2 border-dashed border-gray-200 px-2 text-sm text-nowrap text-gray-400"
+        class="h-7.5 overflow-hidden rounded-md border-2 border-dashed border-neutral-200 dark:border-neutral-500 px-2 text-sm text-nowrap text-neutral-400 dark:text-neutral-300"
         (click)="createStage(route())"
         (contextmenu)="onRouteRightClick(route(), $event)"
         (animate.enter)="onEmptyEnter($event)"
@@ -26,7 +26,7 @@
     @if (route().stages.length > 0) {
       <button
         type="button"
-        class="create-stage-button -ml-1 w-0 overflow-hidden rounded border-dashed border-gray-200 px-0 text-sm text-nowrap text-white transition-all"
+        class="create-stage-button -ml-1 w-0 overflow-hidden rounded border-dashed border-neutral-200 dark:border-neutral-500 px-0 text-sm text-nowrap transition-all"
         (click)="createStage(route())"
       >
         +

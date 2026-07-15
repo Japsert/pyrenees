@@ -1,7 +1,7 @@
-@reference "tailwindcss";
+@reference '../../../../styles.css';
 
 :host {
-  @apply w-fit p-2 rounded-lg bg-white flex flex-row gap-2 items-center font-sans;
+  @apply bg-ui dark:bg-ui-dark flex w-fit flex-row items-center gap-2 rounded-lg p-2 font-sans;
   animation: pop-in 0.15s ease-out;
 }
 
@@ -17,5 +17,5 @@
 }
 
 :host::after {
-  @apply content-[''] absolute w-4 h-4 bg-white rounded -right-1 top-1/2 -translate-y-1/2 rotate-45 -z-10;
+  @apply bg-ui dark:bg-ui-dark absolute top-1/2 -right-1 -z-10 h-4 w-4 -translate-y-1/2 rotate-45 rounded content-[''];
 }

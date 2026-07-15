@@ -1,6 +1,12 @@
+/* Custom layer order: first Tailwind's default styling, overridden by Mapbox, and we override those
+   in turn by loading components and utilities last. */
+@layer theme, base, mapbox, components, utilities;
+@import 'mapbox-gl/dist/mapbox-gl.css' layer(mapbox); /* cascade layer */
 @import 'tailwindcss';
 
 @theme {
+  --color-ui: color-mix(in oklab, var(--color-neutral-50) 90%, transparent);
+  --color-ui-dark: color-mix(in oklab, var(--color-neutral-800) 90%, transparent);
   --color-route: #ffaa00;
   --color-route-hover: #ff6600;
   --color-route-select: #ff3300;
@@ -15,24 +21,51 @@
   --style-switch-transition-duration: 200ms;
 }
 
-html,
-body {
-  margin: 0;
-  padding: 0;
-}
-
 /* Overriding Mapbox's default styling */
 
 .mapboxgl-map {
   @apply font-sans!;
 }
 
-.mapboxgl-ctrl button[aria-pressed='true']:not(:disabled) {
+/*.mapboxgl-ctrl button[aria-pressed='true']:not(:disabled) {
   background-color: #ccc;
 }
 
 .mapboxgl-ctrl button[aria-pressed='true']:not(:disabled):hover {
   background-color: #bbb;
+}*/
+
+.mapboxgl-ctrl-group > button,
+.mapboxgl-ctrl-group > .control {
+  @apply bg-ui dark:bg-ui-dark;
+}
+
+.mapboxgl-ctrl-group {
+  > button:not(:first-child),
+  > .control:not(:first-child) {
+    @apply border-t border-t-neutral-200 dark:border-t-neutral-500;
+  }
+}
+
+.mapboxgl-ctrl-group {
+  > button:not(:disabled):hover,
+  > .control:not(:has(button:disabled)):hover {
+    @apply bg-neutral-200 dark:bg-neutral-600;
+  }
+  
+  button:disabled,
+  > .control:disabled {
+    @apply text-black/25 dark:text-black/40;
+  }
+
+  button[aria-pressed='true'] {
+    @apply bg-neutral-300 dark:bg-neutral-500;
+  }
+}
+
+/* Override Mapbox again, very specifically */
+.mapboxgl-ctrl-group > .control > button {
+  @apply rounded-none bg-transparent hover:bg-transparent;
 }
 
 /* To be able to change the map cursor in different components */
