@@ -1,9 +1,10 @@
-import { Component, output } from '@angular/core';
+import { Component, output, ChangeDetectionStrategy } from '@angular/core';
 
 @Component({
   selector: 'app-confirm-clear',
   imports: [],
   templateUrl: './confirm-clear.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './confirm-clear.component.css',
 })
 export class ConfirmClearComponent {
