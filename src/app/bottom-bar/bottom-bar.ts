@@ -1,4 +1,4 @@
-import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { StyleSwitcher } from './style-switcher/style-switcher';
 import { HeightMap } from './height-map/height-map';
 import { StageStats } from './stage-stats/stage-stats';
@@ -8,7 +8,6 @@ import { PlannerService } from '../services';
 @Component({
   selector: 'app-bottom-bar',
   imports: [StyleSwitcher, StageStats, HeightMap, Flyover],
-  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './bottom-bar.html',
 })
 export class BottomBar {

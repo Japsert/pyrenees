@@ -1,11 +1,10 @@
-import { Component, computed, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { PlannerService } from '../../services';
 
 @Component({
   selector: 'app-stage-stats',
   imports: [],
   templateUrl: './stage-stats.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './stage-stats.css',
 })
 export class StageStats {

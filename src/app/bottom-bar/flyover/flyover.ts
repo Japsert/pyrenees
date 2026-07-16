@@ -1,10 +1,9 @@
-import { Component, computed, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { PlannerService, FlyoverService } from '../../services';
 
 @Component({
   selector: 'app-flyover',
   imports: [],
-  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './flyover.html',
 })
 export class Flyover {

@@ -1,12 +1,4 @@
-import {
-  Component,
-  inject,
-  computed,
-  effect,
-  signal,
-  DestroyRef,
-  ChangeDetectionStrategy,
-} from '@angular/core';
+import { Component, inject, computed, effect, signal, DestroyRef } from '@angular/core';
 import haversine from 'haversine-distance';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -65,7 +57,6 @@ const DARK_PALETTE: Palette = {
   selector: 'app-height-map',
   imports: [NgxEchartsDirective],
   templateUrl: './height-map.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [provideEchartsCore({ echarts })],
 })
 export class HeightMap {

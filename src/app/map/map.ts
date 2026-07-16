@@ -1,19 +1,10 @@
-import {
-  Component,
-  ElementRef,
-  OnDestroy,
-  OnInit,
-  ViewChild,
-  inject,
-  ChangeDetectionStrategy,
-} from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { MapService } from '../services/map';
 
 @Component({
   selector: 'app-map',
   standalone: true,
   templateUrl: './map.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./map.css'],
 })
 export class Map implements OnInit, OnDestroy {

@@ -7,7 +7,6 @@ import {
   HostListener,
   inject,
   signal,
-  ChangeDetectionStrategy,
 } from '@angular/core';
 import { IControl } from 'mapbox-gl';
 import { ConfirmClearComponent } from './confirm-clear/confirm-clear.component';
@@ -16,7 +15,6 @@ import { HistoryService, InteractionService, PlannerService } from '../../servic
 @Component({
   selector: 'app-route-control',
   templateUrl: './route-control.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [ConfirmClearComponent],
 })
 export class RouteControlComponent {

@@ -1,11 +1,4 @@
-import {
-  AnimationCallbackEvent,
-  Component,
-  inject,
-  input,
-  OnInit,
-  ChangeDetectionStrategy,
-} from '@angular/core';
+import { AnimationCallbackEvent, Component, inject, input, OnInit } from '@angular/core';
 import { Route } from '../../model';
 import { InteractionService, MenuAction, PlannerService } from '../../services';
 import { BarStage } from '../stage/bar-stage';
@@ -16,7 +9,6 @@ import { ContextMenuDirective } from '../../context-menu/context-menu-directive'
   imports: [BarStage, ContextMenuDirective],
   templateUrl: './bar-route.html',
   styleUrl: './bar-route.css',
-  changeDetection: ChangeDetectionStrategy.Eager,
   host: {
     class: 'overflow-hidden',
     '(animate.enter)': 'onEnter($event)',

@@ -1,10 +1,9 @@
-import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 
 @Component({
   selector: 'app-text-field',
   imports: [],
   templateUrl: './text-field.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './text-field.css',
 })
 export class TextField {

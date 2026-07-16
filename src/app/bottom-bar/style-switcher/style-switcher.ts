@@ -1,11 +1,10 @@
-import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MapService } from '../../services/map';
 import { MapStyle } from '../../style.enum';
 
 @Component({
   selector: 'app-style-switcher',
   imports: [],
-  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './style-switcher.html',
 })
 export class StyleSwitcher {

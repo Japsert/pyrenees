@@ -5,7 +5,6 @@ import {
   inject,
   OnInit,
   signal,
-  ChangeDetectionStrategy,
 } from '@angular/core';
 import { PlannerService } from '../services';
 import { BarRoute } from './route/bar-route';
@@ -14,7 +13,6 @@ import { BarRoute } from './route/bar-route';
   selector: 'app-trip-bar',
   templateUrl: './trip-bar.html',
   styleUrl: './trip-bar.css',
-  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [BarRoute],
 })
 export class TripBar implements OnInit {
