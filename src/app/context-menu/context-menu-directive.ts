@@ -11,7 +11,8 @@ export class ContextMenuDirective {
 
   @HostListener('contextmenu', ['$event'])
   protected onContextMenu(e: MouseEvent): void {
-    e.preventDefault();
+    e.preventDefault(); // don't show default context menu
+    e.stopPropagation(); // don't also trigger context menu of element below
     this.menu.open({ coords: { x: e.clientX, y: e.clientY }, actions: this.actions() });
   }
 }

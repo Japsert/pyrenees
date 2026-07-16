@@ -24,7 +24,7 @@ export class BarStage {
   protected readonly menuActions: MenuAction[] = [
     {
       icon: '🗑️',
-      label: 'Delete',
+      label: 'Delete stage',
       run: () => {
         console.debug('running');
         this.planner.deleteStage(this.route(), this.stage());

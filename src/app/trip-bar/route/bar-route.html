@@ -4,11 +4,12 @@
       ? 'bg-neutral-200 dark:bg-neutral-600'
       : 'bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700'
   }}"
+  (click)="onRouteLeftClick(route())"
+  appContextMenu
+  [actions]="menuActions"
 >
   <div
     class="flex h-5 items-center justify-center text-xs text-nowrap text-neutral-400 dark:text-neutral-300"
-    (click)="onRouteLeftClick(route())"
-    (contextmenu)="onRouteRightClick(route(), $event)"
   >
     {{ route().name }}
   </div>
@@ -24,7 +25,6 @@
       <button
         class="h-7.5 overflow-hidden rounded-md border-2 border-dashed border-neutral-200 px-2 text-sm text-nowrap text-neutral-400 dark:border-neutral-500 dark:text-neutral-300"
         (click)="createStage(route())"
-        (contextmenu)="onRouteRightClick(route(), $event)"
         (animate.enter)="onEmptyEnter($event)"
       >
         + Create stage

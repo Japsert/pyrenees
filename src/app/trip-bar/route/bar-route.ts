@@ -1,11 +1,12 @@
 import { AnimationCallbackEvent, Component, inject, input, OnInit } from '@angular/core';
 import { Route } from '../../model';
-import { InteractionService, PlannerService } from '../../services';
+import { InteractionService, MenuAction, PlannerService } from '../../services';
 import { BarStage } from '../stage/bar-stage';
+import { ContextMenuDirective } from '../../context-menu/context-menu-directive';
 
 @Component({
   selector: 'app-route',
-  imports: [BarStage],
+  imports: [BarStage, ContextMenuDirective],
   templateUrl: './bar-route.html',
   styleUrl: './bar-route.css',
   host: {
@@ -21,6 +22,16 @@ export class BarRoute implements OnInit {
 
   private readonly planner = inject(PlannerService);
   private readonly interaction = inject(InteractionService);
+
+  protected readonly menuActions: MenuAction[] = [
+    {
+      icon: '🗑️',
+      label: 'Delete route',
+      run: () => {
+        this.planner.deleteRoute(this.route());
+      },
+    },
+  ];
 
   ngOnInit(): void {
     document.addEventListener('mousemove', (e) => {
@@ -98,12 +109,6 @@ export class BarRoute implements OnInit {
       return;
     }
     this.planner.selectRoute(route);
-  }
-
-  protected onRouteRightClick(route: Route, event: MouseEvent): void {
-    event.preventDefault();
-    // TODO: show context menu (and select) instead of deleting
-    this.planner.deleteRoute(route);
   }
 
   protected onEmptyEnter(event: AnimationCallbackEvent): void {

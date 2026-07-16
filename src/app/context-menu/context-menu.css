@@ -25,5 +25,5 @@
 }
 
 .out {
-  animation: out 100ms ease forwards;
+  animation: out 50ms ease forwards;
 }
