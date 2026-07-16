@@ -1,10 +1,11 @@
 import { AnimationCallbackEvent, Component, inject, input } from '@angular/core';
 import { Route, Stage } from '../../model';
-import { InteractionService, MenuService, PlannerService } from '../../services';
+import { MenuAction, PlannerService } from '../../services';
+import { ContextMenuDirective } from '../../context-menu/context-menu-directive';
 
 @Component({
   selector: 'app-stage',
-  imports: [],
+  imports: [ContextMenuDirective],
   templateUrl: './bar-stage.html',
   host: {
     class: 'overflow-hidden',
@@ -19,8 +20,17 @@ export class BarStage {
   readonly isOnly = input.required<boolean>();
 
   private readonly planner = inject(PlannerService);
-  private readonly interaction = inject(InteractionService);
-  private readonly menu = inject(MenuService);
+
+  protected readonly menuActions: MenuAction[] = [
+    {
+      icon: '🗑️',
+      label: 'Delete',
+      run: () => {
+        console.debug('running');
+        this.planner.deleteStage(this.route(), this.stage());
+      },
+    },
+  ];
 
   protected onEnter(event: AnimationCallbackEvent): void {
     if (!this.renderedOnce()) return event.animationComplete();
@@ -71,11 +81,6 @@ export class BarStage {
       return;
     }
     this.planner.selectStage(route, stage);
-  }
-
-  protected onStageRightClick(route: Route, stage: Stage, event: MouseEvent): void {
-    event.preventDefault();
-    this.menu.openStageContextMenu(route, stage, { x: event.clientX, y: event.clientY });
   }
 
   protected setStageName(route: Route, stage: Stage, name: string): void {

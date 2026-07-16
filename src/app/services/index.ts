@@ -4,4 +4,5 @@ export * from './history';
 export * from './interaction/interaction';
 export * from './layers';
 export * from './map';
+export * from './menu';
 export * from './planner';

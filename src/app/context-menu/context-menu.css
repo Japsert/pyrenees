@@ -1,0 +1,29 @@
+@keyframes in {
+  from {
+    opacity: 0;
+    transform: scale(95%);
+  }
+  to {
+    opacity: 1;
+    transform: scale(100%);
+  }
+}
+
+@keyframes out {
+  from {
+    opacity: 1;
+    transform: scale(100%);
+  }
+  to {
+    opacity: 0;
+    transform: scale(95%);
+  }
+}
+
+.in {
+  animation: in 150ms ease forwards;
+}
+
+.out {
+  animation: out 100ms ease forwards;
+}
