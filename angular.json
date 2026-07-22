@@ -24,8 +24,13 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.css"],
-            "allowedCommonJsDependencies": ["mapbox-gl"]
+            "styles": [
+              "src/styles.css"
+            ],
+            "allowedCommonJsDependencies": [
+              "mapbox-gl"
+            ],
+            "sourceMap": true
           },
           "configurations": {
             "production": {
