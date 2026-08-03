@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { PlannerService } from '../services';
 import { BarRoute } from './route/bar-route';
+import { Route } from '../model';
 
 @Component({
   selector: 'app-trip-bar',
@@ -58,6 +59,10 @@ export class TripBar implements OnInit {
             { duration: 200, easing: 'ease' },
           );
     animation.finished.then(() => event.animationComplete());
+  }
+
+  protected isRouteSelected(route: Route): boolean {
+    return this.planner.selectedRoute() === route;
   }
 
   protected createRoute(): void {

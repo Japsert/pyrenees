@@ -1,15 +1,17 @@
 <button
-  class="route flex h-full flex-col overflow-hidden rounded-lg pb-0.75 {{
-    isRouteSelected(route())
-      ? 'bg-neutral-200 dark:bg-neutral-600'
-      : 'bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700'
+  class="route ui-bg flex h-full flex-col rounded-lg pb-0.75 shadow-neutral-200 transition-all active:translate-y-1 active:shadow-none dark:shadow-neutral-500 {{
+    isRouteSelected(route()) ? 'shadow-[0_2px_0_0] translate-y-[2px]' : 'shadow-[0_4px_0_0]'
   }}"
-  (click)="onRouteLeftClick(route())"
+  (click)="onRouteLeftClick($event, route())"
   appContextMenu
-  [actions]="menuActions"
+  [content]="menuContent()"
 >
   <div
-    class="flex h-5 items-center justify-center text-xs text-nowrap text-neutral-400 dark:text-neutral-300"
+    class="flex h-5 items-center justify-center text-xs text-nowrap transition text-neutral-400 dark:text-neutral-300 {{
+      isRouteSelected(route())
+        ? 'font-semibold text-neutral-300 dark:text-neutral-100'
+        : 'font-normal'
+    }}"
   >
     {{ route().name }}
   </div>

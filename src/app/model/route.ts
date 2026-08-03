@@ -15,6 +15,7 @@ import { Feature, LineString, Point } from 'geojson';
 export type RouteJson = {
   id: Id;
   name: string;
+  description: string;
   stages: StageJson[];
 };
 
@@ -31,21 +32,26 @@ export class Route {
   private constructor(
     readonly id: Id,
     readonly name: string,
+    readonly description: string,
     readonly stages: readonly Stage[],
   ) {}
 
   static create(): Route {
-    return new Route(generateId(), 'New route', []);
+    return new Route(generateId(), 'New route', '', []);
   }
 
   withName(name: string): Route {
-    return new Route(this.id, name, this.stages);
+    return new Route(this.id, name, this.description, this.stages);
+  }
+
+  withDescription(description: string): Route {
+    return new Route(this.id, this.name, description, this.stages);
   }
 
   withAddedStage(): [Route, Stage] {
     const newStage = Stage.create();
     const newStages = [...this.stages, newStage];
-    const newRoute = new Route(this.id, this.name, newStages);
+    const newRoute = new Route(this.id, this.name, this.description, newStages);
     return [newRoute, newStage];
   }
 
@@ -53,21 +59,29 @@ export class Route {
     const idx = this.findStageIdxOrElse(stage.id);
     const newStages = [...this.stages];
     newStages[idx] = func(stage);
-    return new Route(this.id, this.name, newStages);
+    return new Route(this.id, this.name, this.description, newStages);
+  }
+
+  withDuplicatedStage(stage: Stage): Route {
+    const idx = this.findStageIdxOrElse(stage.id);
+    const newStages = [...this.stages];
+    const duplicateStage = stage.duplicate();
+    newStages.splice(idx + 1, 0, duplicateStage);
+    return new Route(this.id, this.name, this.description, newStages);
   }
 
   withUpdatedSegment(stage: Stage, segment: Segment, func: (segment: Segment) => Segment): Route {
     const idx = this.findStageIdxOrElse(stage.id);
     const newStages = [...this.stages];
     newStages[idx] = newStages[idx].withUpdatedSegment(segment, func);
-    return new Route(this.id, this.name, newStages);
+    return new Route(this.id, this.name, this.description, newStages);
   }
 
   withDeletedStage(stage: Stage): Route {
     const idx = this.findStageIdxOrElse(stage.id);
     const newStages = [...this.stages];
     newStages.splice(idx, 1);
-    return new Route(this.id, this.name, newStages);
+    return new Route(this.id, this.name, this.description, newStages);
   }
 
   // ha ha
@@ -132,13 +146,19 @@ export class Route {
   }
 
   toJson(): RouteJson {
-    return { id: this.id, name: this.name, stages: this.stages.map((stage) => stage.toJson()) };
+    return {
+      id: this.id,
+      name: this.name,
+      description: this.description,
+      stages: this.stages.map((stage) => stage.toJson()),
+    };
   }
 
   static fromJson(d: RouteJson): Route {
     return new Route(
       d.id,
       d.name,
+      d.description,
       d.stages.map((stage) => Stage.fromJson(stage)),
     );
   }

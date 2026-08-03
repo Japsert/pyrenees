@@ -52,6 +52,11 @@ export class Segment {
     return new Segment(id, start, end, track, info);
   }
 
+  duplicate(): Segment {
+    const duplicateTrack = this.track?.map((node) => node.duplicate());
+    return new Segment(generateId(), this.start.duplicate(), this.end.duplicate(), duplicateTrack, this.info);
+  }
+
   withData(fc: BRouterFeatureCollection): Segment {
     const feature = fc.features.at(0)!;
     const { coordinates } = feature.geometry;

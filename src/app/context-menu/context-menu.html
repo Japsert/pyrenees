@@ -1,22 +1,23 @@
 @if (isOpen()) {
   <div
-    class="fixed flex min-w-32 flex-col rounded-lg bg-neutral-50 p-1.5 dark:bg-neutral-800"
-    [style.left.px]="left()"
-    [style.top.px]="top()"
+    #contextMenu
+    class="ui-bg fixed flex min-w-32 flex-col rounded-lg p-1.5 shadow-xl"
+    [style.left.px]="x()"
+    [style.top.px]="y()"
+    [style.visibility]="isPositioned() ? 'visible' : 'hidden'"
     animate.enter="in"
     animate.leave="out"
     (mousedown)="onMenuMouseDown($event)"
   >
-    @for (action of actions(); track $index) {
-      <button
-        class="w-full rounded bg-neutral-800 px-2.5 py-0.5 text-start text-sm text-neutral-800 hover:bg-neutral-700 dark:text-neutral-200"
-        (mouseup)="onActionMouseUp(action)"
-      >
-        <div class="flex gap-3">
-          <span>{{ action.icon }}</span>
-          <span>{{ action.label }}</span>
-        </div>
-      </button>
+    @let contentType = this.contentType();
+    @switch (contentType) {
+      @case ('route') {
+        <app-route-context-menu />
+      }
+      @case ('stage') {
+        <app-stage-context-menu />
+      }
+      @default never(contentType);
     }
   </div>
 }

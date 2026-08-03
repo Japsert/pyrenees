@@ -1,7 +1,14 @@
-import { AnimationCallbackEvent, Component, inject, input } from '@angular/core';
+import { AnimationCallbackEvent, Component, inject, input, Signal, signal } from '@angular/core';
 import { Route, Stage } from '../../model';
-import { MenuAction, PlannerService } from '../../services';
+import { MenuAction, MenuContent, PlannerService } from '../../services';
 import { ContextMenuDirective } from '../../context-menu/context-menu-directive';
+
+export interface StageMenu extends MenuContent {
+  readonly type: 'stage';
+  route: Signal<Route>;
+  stage: Signal<Stage>;
+  actions: MenuAction[];
+}
 
 @Component({
   selector: 'app-stage',
@@ -21,16 +28,28 @@ export class BarStage {
 
   private readonly planner = inject(PlannerService);
 
-  protected readonly menuActions: MenuAction[] = [
-    {
-      icon: '🗑️',
-      label: 'Delete stage',
-      run: () => {
-        console.debug('running');
-        this.planner.deleteStage(this.route(), this.stage());
-      },
-    },
-  ];
+  // Will be initialized immediately in ngOnInit
+  protected readonly menuContent = signal<StageMenu>(null as unknown as StageMenu);
+
+  ngOnInit(): void {
+    this.menuContent.set({
+      type: 'stage',
+      route: this.route,
+      stage: this.stage,
+      actions: [
+        {
+          icon: '📑',
+          label: 'Duplicate',
+          run: () => this.planner.duplicateStage(this.route(), this.stage()),
+        },
+        {
+          icon: '🗑️',
+          label: 'Delete',
+          run: () => this.planner.deleteStage(this.route(), this.stage()),
+        },
+      ],
+    });
+  }
 
   protected onEnter(event: AnimationCallbackEvent): void {
     if (!this.renderedOnce()) return event.animationComplete();
@@ -75,7 +94,8 @@ export class BarStage {
     return this.planner.selectedStage() === stage;
   }
 
-  protected onStageLeftClick(route: Route, stage: Stage): void {
+  protected onStageLeftClick(event: PointerEvent, route: Route, stage: Stage): void {
+    event.stopPropagation();
     if (this.isStageSelected(stage)) {
       this.planner.deselectStage();
       return;

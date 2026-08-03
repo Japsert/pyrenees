@@ -1,0 +1,43 @@
+@reference '../../../../styles.css';
+
+.color {
+  @apply size-7 rounded-lg;
+}
+
+.color-custom {
+  @apply flex items-center justify-center bg-neutral-300 text-neutral-500;
+}
+
+@keyframes in {
+  from {
+    opacity: 0;
+    translate: -5%;
+    scale: 95%;
+  }
+  to {
+    opacity: 1;
+    translate: 0%;
+    scale: 100%;
+  }
+}
+
+@keyframes out {
+  from {
+    opacity: 1;
+    translate: 0%;
+    scale: 100%;
+  }
+  to {
+    opacity: 0;
+    translate: -5%;
+    scale: 95%;
+  }
+}
+
+.in {
+  animation: in 150ms ease forwards;
+}
+
+.out {
+  animation: out 50ms ease forwards;
+}

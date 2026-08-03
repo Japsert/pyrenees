@@ -1,7 +1,7 @@
 @reference '../../../../styles.css';
 
 :host {
-  @apply bg-ui dark:bg-ui-dark flex w-fit flex-row items-center gap-2 rounded-lg p-2 font-sans;
+  @apply ui-bg flex w-fit flex-row items-center gap-2 rounded-lg p-2 font-sans;
   animation: pop-in 0.15s ease-out;
 }
 
@@ -17,5 +17,5 @@
 }
 
 :host::after {
-  @apply bg-ui dark:bg-ui-dark absolute top-1/2 -right-1 -z-10 h-4 w-4 -translate-y-1/2 rotate-45 rounded content-[''];
+  @apply ui-bg absolute top-1/2 -right-1 -z-10 h-4 w-4 -translate-y-1/2 rotate-45 rounded content-[''];
 }

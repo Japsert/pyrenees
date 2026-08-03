@@ -22,6 +22,10 @@ export class Waypoint {
     return new Waypoint(generateId(), position);
   }
 
+  duplicate(): Waypoint {
+    return new Waypoint(generateId(), this.position);
+  }
+
   withPosition(newPos: Position): Waypoint {
     return new Waypoint(this.id, newPos);
   }

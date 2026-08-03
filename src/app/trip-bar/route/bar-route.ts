@@ -1,8 +1,22 @@
-import { AnimationCallbackEvent, Component, inject, input, OnInit } from '@angular/core';
+import {
+  AnimationCallbackEvent,
+  Component,
+  inject,
+  input,
+  OnInit,
+  Signal,
+  signal,
+} from '@angular/core';
 import { Route } from '../../model';
-import { InteractionService, MenuAction, PlannerService } from '../../services';
+import { InteractionService, MenuAction, MenuContent, PlannerService } from '../../services';
 import { BarStage } from '../stage/bar-stage';
 import { ContextMenuDirective } from '../../context-menu/context-menu-directive';
+
+export interface RouteMenu extends MenuContent {
+  readonly type: 'route';
+  route: Signal<Route>;
+  actions: MenuAction[];
+}
 
 @Component({
   selector: 'app-route',
@@ -10,7 +24,6 @@ import { ContextMenuDirective } from '../../context-menu/context-menu-directive'
   templateUrl: './bar-route.html',
   styleUrl: './bar-route.css',
   host: {
-    class: 'overflow-hidden',
     '(animate.enter)': 'onEnter($event)',
     '(animate.leave)': 'onLeave($event)',
   },
@@ -23,17 +36,23 @@ export class BarRoute implements OnInit {
   private readonly planner = inject(PlannerService);
   private readonly interaction = inject(InteractionService);
 
-  protected readonly menuActions: MenuAction[] = [
-    {
-      icon: '🗑️',
-      label: 'Delete route',
-      run: () => {
-        this.planner.deleteRoute(this.route());
-      },
-    },
-  ];
+  protected readonly menuContent = signal<RouteMenu>(null as unknown as RouteMenu);
 
   ngOnInit(): void {
+    this.menuContent.set({
+      type: 'route',
+      route: this.route,
+      actions: [
+        {
+          icon: '🗑️',
+          label: 'Delete route',
+          run: () => {
+            this.planner.deleteRoute(this.route());
+          },
+        },
+      ],
+    });
+
     document.addEventListener('mousemove', (e) => {
       const createStageButtons = document.querySelectorAll<HTMLElement>('.create-stage-button');
 
@@ -99,7 +118,8 @@ export class BarRoute implements OnInit {
     return this.planner.selectedRoute() === route;
   }
 
-  protected onRouteLeftClick(route: Route): void {
+  protected onRouteLeftClick(event: PointerEvent, route: Route): void {
+    event.stopPropagation();
     if (this.isRouteSelected(route)) {
       if (this.planner.selectedStage() !== null) {
         this.planner.deselectStage();

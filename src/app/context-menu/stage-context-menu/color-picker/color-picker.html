@@ -1,0 +1,45 @@
+<div class="absolute top-0 left-1/2 shadow-xl" animate.enter="in" animate.leave="out">
+  <div
+    class="border-t-neutral-50/90 dark:border-t-neutral-800/90 absolute bottom-2 size-0 -translate-x-1/2 border-x-8 border-t-8 border-b-0 border-x-transparent"
+  ></div>
+
+  <div class="ui-bg absolute bottom-4 -left-6 flex flex-col gap-1 rounded-lg p-2">
+    <div class="grid grid-cols-[repeat(8,28px)] gap-1">
+      @for (color of colors; track $index) {
+        <button
+          type="button"
+          class="color"
+          [style.background-color]="color.toOklchString()"
+          (click)="pickColor(color)"
+        ></button>
+      }
+      <div
+        class="col-span-4 flex overflow-hidden rounded-lg border border-neutral-300 dark:border-neutral-500"
+      >
+        <button
+          type="button"
+          class="aspect-square w-6"
+          [style.background-color]="currentColor()"
+          (click)="pickColor(currentColor())"
+        ></button>
+        <input
+          class="min-w-0 rounded-r-lg px-1 text-neutral-800 dark:text-neutral-200"
+          [value]="currentColor()"
+        />
+      </div>
+    </div>
+    <div class="mt-1 grid grid-cols-[repeat(8,28px)] gap-1 overflow-hidden rounded-lg">
+      @for (color of this.colorService.customColors(); track $index) {
+        <button
+          type="button"
+          class="color transition-colors"
+          [style.background-color]="color"
+          (click)="pickColor(color)"
+        ></button>
+      }
+      <button type="button" class="color color-custom" (click)="addCustomColor(currentColor())">
+        +
+      </button>
+    </div>
+  </div>
+</div>

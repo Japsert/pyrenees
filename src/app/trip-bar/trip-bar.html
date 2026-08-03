@@ -4,10 +4,11 @@
       [route]="route"
       [renderedOnce]="renderedOnce()"
       [isOnly]="trip().routes.length === 1"
+      class="pointer-events-auto rounded-lg shadow-xl"
     />
   } @empty {
     <button
-      class="bg-ui dark:bg-ui-dark flex h-full items-center overflow-hidden rounded-lg border border-dashed border-neutral-200 p-1 px-2 text-sm text-nowrap text-neutral-800 dark:border-neutral-700 dark:text-neutral-200"
+      class="pointer-events-auto ui-bg flex h-full items-center overflow-hidden rounded-lg border border-dashed border-neutral-200 p-1 px-2 text-sm text-nowrap text-neutral-800 dark:border-neutral-700 dark:text-neutral-200"
       (click)="createRoute()"
       (animate.enter)="onEmptyEnter($event)"
     >
@@ -18,7 +19,7 @@
     <button
       type="button"
       id="create-route-button"
-      class="bg-ui dark:bg-ui-dark h-8 w-4 rounded text-sm text-neutral-800 opacity-0 transition-opacity duration-200 dark:text-neutral-200"
+      class="pointer-events-auto ui-bg h-8 w-4 rounded text-sm text-neutral-800 opacity-0 transition-opacity duration-200 dark:text-neutral-200"
       (click)="createRoute()"
     >
       +

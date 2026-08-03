@@ -1,0 +1,40 @@
+<div class="flex flex-col gap-2">
+  <div class="flex h-7 items-center gap-2">
+    <app-input
+      class="h-full min-w-0 grow rounded-md border border-neutral-500 text-sm text-neutral-800 transition dark:text-neutral-200"
+      (nameChange)="onNameChange($event)"
+      [(value)]="stage().name"
+      placeholder="Stage name"
+    />
+    <div class="relative h-full">
+      <button
+        class="h-full w-7 shrink-0 rounded-lg border transition-colors"
+        [style.background-color]="stage().color"
+        (click)="toggleColorPicker()"
+      ></button>
+
+      @if (isColorPickerOpen()) {
+        <app-color-picker [currentColor]="stage().color" (colorPicked)="onColorChange($event)" />
+      }
+    </div>
+  </div>
+
+  <textarea
+    class="w-full resize-none rounded-md border border-neutral-500 p-2 text-sm text-neutral-800 dark:text-neutral-200"
+    placeholder="Description"
+  ></textarea>
+
+  <div>
+    @for (action of actions(); track $index) {
+      <button
+        class="ui-bg h-7 w-full rounded px-2.5 py-0.5 text-start text-sm text-neutral-800 hover:bg-neutral-200 dark:text-neutral-200 dark:hover:bg-neutral-700"
+        (mouseup)="onActionMouseUp(action)"
+      >
+        <div class="flex gap-3">
+          <span>{{ action.icon }}</span>
+          <span>{{ action.label }}</span>
+        </div>
+      </button>
+    }
+  </div>
+</div>

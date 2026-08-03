@@ -14,13 +14,15 @@ import {
   WaypointJson,
 } from '.';
 import { NearestPointOnLine } from '../services';
-import { Color, color } from 'use-color';
+import { Color, color, OKLCH } from 'use-color';
 
 export type StageJson = {
   id: Id;
   version: number;
   sourceId: Id;
   name: string;
+  color: string;
+  description: string;
   initialWaypoint: WaypointJson | null;
   segments: SegmentJson[];
 };
@@ -35,7 +37,7 @@ type StageFeatures = {
 export type StageStats = SegmentInfo;
 
 export class Stage {
-  private static readonly VERSION: number = 6;
+  private static readonly VERSION: number = 8;
   private static readonly DEFAULT_COLOR = color('#ffaa00');
 
   private constructor(
@@ -43,22 +45,62 @@ export class Stage {
     readonly sourceId: Id,
     readonly name: string,
     readonly color: Color,
+    readonly description: string,
     readonly initialWaypoint: Waypoint | null,
     readonly segments: readonly Segment[],
   ) {}
 
   static create(): Stage {
-    return new Stage(generateId(), generateId(), 'New stage', Stage.DEFAULT_COLOR, null, []);
+    return new Stage(generateId(), generateId(), 'New stage', Stage.DEFAULT_COLOR, '', null, []);
+  }
+
+  duplicate(): Stage {
+    const duplicateSegments = this.segments.map((segment) => segment.duplicate());
+    return new Stage(
+      generateId(),
+      generateId(),
+      this.name,
+      this.color,
+      this.description,
+      this.initialWaypoint,
+      duplicateSegments,
+    );
   }
 
   //#region Mutating methods
 
-  withName(name: string) {
+  // TODO: Combine these into one
+  withName(name: string): Stage {
     return new Stage(
       this.id,
       this.sourceId,
       name,
-      Stage.DEFAULT_COLOR,
+      this.color,
+      this.description,
+      this.initialWaypoint,
+      this.segments,
+    );
+  }
+
+  withColor(color: Color): Stage {
+    return new Stage(
+      this.id,
+      this.sourceId,
+      this.name,
+      color,
+      this.description,
+      this.initialWaypoint,
+      this.segments,
+    );
+  }
+
+  withDescription(description: string): Stage {
+    return new Stage(
+      this.id,
+      this.sourceId,
+      this.name,
+      this.color,
+      description,
       this.initialWaypoint,
       this.segments,
     );
@@ -71,7 +113,8 @@ export class Stage {
         this.id,
         this.sourceId,
         this.name,
-        Stage.DEFAULT_COLOR,
+        this.color,
+        this.description,
         newInitialWaypoint,
         this.segments,
       );
@@ -88,7 +131,8 @@ export class Stage {
       this.id,
       this.sourceId,
       this.name,
-      Stage.DEFAULT_COLOR,
+      this.color,
+      this.description,
       null,
       newSegments,
     );
@@ -105,7 +149,8 @@ export class Stage {
         this.id,
         this.sourceId,
         this.name,
-        Stage.DEFAULT_COLOR,
+        this.color,
+        this.description,
         initialWaypoint,
         this.segments,
       );
@@ -145,7 +190,8 @@ export class Stage {
       this.id,
       this.sourceId,
       this.name,
-      Stage.DEFAULT_COLOR,
+      this.color,
+      this.description,
       this.initialWaypoint,
       newSegments,
     );
@@ -160,7 +206,8 @@ export class Stage {
         this.id,
         this.sourceId,
         this.name,
-        Stage.DEFAULT_COLOR,
+        this.color,
+        this.description,
         newInitialWaypoint,
         this.segments,
       );
@@ -193,7 +240,8 @@ export class Stage {
       this.id,
       this.sourceId,
       this.name,
-      Stage.DEFAULT_COLOR,
+      this.color,
+      this.description,
       this.initialWaypoint,
       newSegments,
     );
@@ -212,7 +260,8 @@ export class Stage {
       this.id,
       this.sourceId,
       this.name,
-      Stage.DEFAULT_COLOR,
+      this.color,
+      this.description,
       this.initialWaypoint,
       newSegments,
     );
@@ -235,7 +284,8 @@ export class Stage {
       this.id,
       this.sourceId,
       this.name,
-      Stage.DEFAULT_COLOR,
+      this.color,
+      this.description,
       this.initialWaypoint,
       newSegments,
     );
@@ -262,7 +312,8 @@ export class Stage {
       this.id,
       this.sourceId,
       this.name,
-      Stage.DEFAULT_COLOR,
+      this.color,
+      this.description,
       this.initialWaypoint,
       newSegments,
     );
@@ -320,6 +371,8 @@ export class Stage {
       id: this.id,
       sourceId: this.sourceId,
       name: this.name,
+      color: this.color.toHex(),
+      description: this.description,
       initialWaypoint: this.initialWaypoint?.toJson() ?? null,
       segments: this.segments.map((segment) => segment.toJson()),
     };
@@ -334,7 +387,8 @@ export class Stage {
       data.id,
       data.sourceId,
       data.name,
-      Stage.DEFAULT_COLOR,
+      Color.from(data.color),
+      data.description,
       data.initialWaypoint !== null ? Waypoint.fromJson(data.initialWaypoint) : null,
       data.segments.map((segment) => Segment.fromJson(segment)),
     );

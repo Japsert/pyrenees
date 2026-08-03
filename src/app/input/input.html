@@ -1,0 +1,10 @@
+<input
+  type="text"
+  [value]="value()"
+  (focus)="onFocus()"
+  (input)="onInput($event)"
+  (keydown.enter)="onEnterDown($event)"
+  (keydown.escape)="onEscapeDown($event)"
+  [placeholder]="placeholder()"
+  class="h-full px-2"
+/>

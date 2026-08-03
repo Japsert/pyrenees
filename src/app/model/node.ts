@@ -18,6 +18,10 @@ export class Node {
     return new Node(position, elevation, time);
   }
 
+  duplicate(): Node {
+    return new Node(this.position, this.elevation, this.time);
+  }
+
   asLngLat(): LngLat {
     return new LngLat(this.position[0], this.position[1]);
   }

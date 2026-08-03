@@ -1,13 +1,14 @@
-<div class="overflow-hidden rounded-md">
+<div class="overflow-hidden rounded-md shadow-xl">
   <button
-    class="h-7.5 px-2 border-b-[3px] border-orange-400 text-sm text-nowrap text-neutral-800 dark:text-neutral-200 transition duration-200 {{
+    class="h-7.5 px-2 border-b-[3px] text-sm text-nowrap text-neutral-800 dark:text-neutral-200 transition duration-200 {{
       isStageSelected(stage())
         ? 'bg-neutral-400/90 dark:bg-neutral-500/90 border-b-8'
         : 'bg-neutral-200/90 dark:bg-neutral-700/90 hover:bg-neutral-300/90 dark:hover:bg-neutral-600/90'
     }}"
-    (click)="onStageLeftClick(route(), stage())"
+    [style.border-color]="stage().color"
+    (click)="onStageLeftClick($event, route(), stage())"
     appContextMenu
-    [actions]="menuActions"
+    [content]="menuContent()"
   >
     {{ stage().name }}
   </button>

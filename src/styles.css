@@ -5,16 +5,7 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-ui: color-mix(in oklab, var(--color-neutral-50) 90%, transparent);
-  --color-ui-dark: color-mix(in oklab, var(--color-neutral-800) 90%, transparent);
-  --color-route: #ffaa00;
-  --color-route-hover: #ff6600;
-  --color-route-select: #ff3300;
-  --inset-shadow-hover: inset 0 0 6px 5px var(--color-orange-100);
-  --inset-shadow-active: inset 0 0 10px 5px var(--color-orange-400);
-  --inset-shadow-flying: inset 0 0 6px 5px var(--color-orange-300);
-  --inset-shadow-flying-hover: inset 0 0 8px 5px var(--color-orange-400);
-  --inset-shadow-flying-active: inset 0 0 10px 5px var(--color-orange-500);
+  --shadow-around: 0 0 8px 4px;
   --bottom-bar-height: 128px;
   --bottom-bar-margin: 8px;
   --trip-bar-height: 52px;
@@ -37,7 +28,7 @@
 
 .mapboxgl-ctrl-group > button,
 .mapboxgl-ctrl-group > .control {
-  @apply bg-ui dark:bg-ui-dark;
+  @apply ui-bg;
 }
 
 .mapboxgl-ctrl-group {
@@ -85,4 +76,10 @@
   [role='button']:not(:disabled) {
     cursor: pointer;
   }
+}
+
+/* Shortcut for UI background */
+
+@utility ui-bg {
+  @apply bg-neutral-50/90 backdrop-blur-sm dark:bg-neutral-800/90;
 }

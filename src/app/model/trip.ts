@@ -18,7 +18,7 @@ export class VersionMismatchError extends Error {
 }
 
 export class Trip {
-  private static readonly VERSION: number = 2;
+  private static readonly VERSION: number = 3;
 
   private constructor(readonly routes: readonly Route[]) {}
 
@@ -60,6 +60,20 @@ export class Trip {
     const idx = this.findRouteIdxOrElse(route.id);
     const newRoutes = [...this.routes];
     newRoutes[idx] = newRoutes[idx].withUpdatedStage(stage, func);
+    return new Trip(newRoutes);
+  }
+
+  withDuplicatedRoute(route: Route): Trip {
+    const idx = this.findRouteIdxOrElse(route.id);
+    const newRoutes = [...this.routes];
+    newRoutes.splice(idx, 0, route);
+    return new Trip(newRoutes);
+  }
+
+  withDuplicatedStage(route: Route, stage: Stage): Trip {
+    const idx = this.findRouteIdxOrElse(route.id);
+    const newRoutes = [...this.routes];
+    newRoutes[idx] = newRoutes[idx].withDuplicatedStage(stage);
     return new Trip(newRoutes);
   }
 

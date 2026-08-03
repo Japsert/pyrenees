@@ -5,8 +5,7 @@
 }
 
 #map1-container,
-#map2-container,
-#fade-container {
+#map2-container {
   position: absolute;
   inset: 0;
 }

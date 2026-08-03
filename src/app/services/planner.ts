@@ -158,6 +158,18 @@ export class PlannerService {
     this.save();
   }
 
+  duplicateRoute(route: Route): void {
+    this.history.commit();
+    this.trip.update((trip) => trip.withDuplicatedRoute(route));
+    this.save();
+  }
+
+  duplicateStage(route: Route, stage: Stage): void {
+    this.history.commit();
+    this.trip.update((trip) => trip.withDuplicatedStage(route, stage));
+    this.save();
+  }
+
   deleteRoute(route: Route): void {
     this.history.commit();
     this.trip.update((trip) => trip.withDeletedRoute(route));

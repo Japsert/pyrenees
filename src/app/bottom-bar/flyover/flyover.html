@@ -1,8 +1,6 @@
 <button
-  class="w-full h-full cursor-pointer bg-ui dark:bg-ui-dark text-neutral-800 dark:text-neutral-200 rounded-lg transition {{
-    isFlying()
-      ? 'inset-shadow-flying hover:inset-shadow-flying-hover active:inset-shadow-flying-active'
-      : 'hover:inset-shadow-hover active:inset-shadow-active'
+  class="w-full h-full cursor-pointer ui-bg text-neutral-800 dark:text-neutral-200 rounded-lg transition shadow-xl {{
+    isFlying() ? '' : ''
   }} pointer-events-auto disabled:cursor-not-allowed"
   (click)="toggleFly($event)"
   [disabled]="!canFly()"

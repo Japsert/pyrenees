@@ -98,3 +98,21 @@ One stage should be marked by waypoints, with segments inbetween.
 - A Trip can have zero or more Routes
 - A Route can have zero or more Stages
 - A Stage can have zero or more Segments
+
+## Route/stage context menu UI
+
+Needs to have:
+
+- Route:
+  - title
+  - color
+  - description
+  - hide action
+  - fly to action
+  - duplicate action
+  - delete action
+
+Color picker needs:
+
+- preset colors
+- custom colors
