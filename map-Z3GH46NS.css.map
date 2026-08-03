@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/map/map.css"],
+  "sourcesContent": [":host {\n  display: block;\n  position: absolute;\n  inset: 0;\n}\n\n#map1-container,\n#map2-container {\n  position: absolute;\n  inset: 0;\n}\n"],
+  "mappings": "AAAA,MACE,QAAA,MACA,SAAA,SAFF,MAGE,CACF,CAEA,CAAA,+BAEE,SAAA,SARF,MASE,CACF",
+  "names": []
+}

@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/text-field/%3Cno source%3E", "src/app/text-field/text-field.css"],
+  "sourcesContent": [null, "@reference 'tailwindcss';\n\n[contenteditable]:empty::before,\n[contenteditable]:has(> br:only-child)::before {\n  content: attr(data-placeholder);\n  @apply text-gray-300 italic;\n}\n"],
+  "mappings": "ACEA,CAAA,gBAAA,MAAA,qDAEE,QAAA,KAAA,kBACO,MAAA,IAAA,gBAAA,EAAA,MAAA,MAAA,IAAA,UAAc,WAAA,MACtB",
+  "names": []
+}

@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/trip-bar/route/%3Cno source%3E", "src/app/trip-bar/route/bar-route.css"],
+  "sourcesContent": [null, "@reference \"tailwindcss\";\n\n.route:hover .create-stage-button.mouse-is-near {\n  @apply ml-0 w-5 px-1 text-gray-400;\n}\n\n.create-stage-button:hover {\n  @apply w-7.5 border-2;\n}\n"],
+  "mappings": "ACOe,kBALf,CAAA,KAAA,OAAA,CAAA,mBAAA,CAAA,cACS,YAAA,KAAA,IAAA,SAAA,EAAA,QAAA,EAAA,GAAK,MAAA,KAAA,IAAA,SAAA,EAAA,QAAA,EAAA,GAAI,eAAA,KAAA,IAAA,SAAA,EAAA,QAAA,EAAA,GAAK,MAAA,IAAA,gBAAA,EAAA,MAAA,MAAA,KAAA,SACtB,CAED,CAJA,mBAIA,OACS,MAAA,KAAA,IAAA,SAAA,EAAA,QAAA,EAAA,KAAM,aAAA,IAAA,mBAAA,aAAA,GACd,CADc,UAAA,iBAAA,CAAA,MAAA,EAAA,GAAQ,EAAR,QAAA,EAAA,KAAQ,EAAR,aAAA,EAAA,KAAQ,EAAR,kBAAA,UAAA,CAAA,CAAA,eAAA,EAAA,MAAA,IAAA,CAAA,IAAA,CAAA,WAAA,EAAA,UAAA,GAAA,CAAA,CAAA,WAAA,EAAA,QAAA,IAAA,CAAA,IAAA,CAAA,KAAA,CAAA,IAAA,KAAA,IAAA,EAAA,EAAA,MAAA,EAAA,QAAA,OAAA,WAAA,mBAAA,KAAQ,CAAA,CAAA",
+  "names": []
+}

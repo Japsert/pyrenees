@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/context-menu/stage-context-menu/color-picker/%3Cno source%3E", "src/app/context-menu/stage-context-menu/color-picker/color-picker.css"],
+  "sourcesContent": [null, "@reference '../../../../styles.css';\n\n.color {\n  @apply size-7 rounded-lg;\n}\n\n.color-custom {\n  @apply flex items-center justify-center bg-neutral-300 text-neutral-500;\n}\n\n@keyframes in {\n  from {\n    opacity: 0;\n    translate: -5%;\n    scale: 95%;\n  }\n  to {\n    opacity: 1;\n    translate: 0%;\n    scale: 100%;\n  }\n}\n\n@keyframes out {\n  from {\n    opacity: 1;\n    translate: 0%;\n    scale: 100%;\n  }\n  to {\n    opacity: 0;\n    translate: -5%;\n    scale: 95%;\n  }\n}\n\n.in {\n  animation: in 150ms ease forwards;\n}\n\n.out {\n  animation: out 50ms ease forwards;\n}\n"],
+  "mappings": "ACEA,CAAA,MACS,MAAA,KAAA,IAAA,SAAA,EAAA,QAAA,EAAA,GAAA,OAAA,KAAA,IAAA,SAAA,EAAA,QAAA,EAAA,GAAO,cAAA,IAAA,WAAA,EAAA,MACf,CAED,CAAA,aACS,QAAA,KAAK,YAAA,OAAa,gBAAA,OAAe,iBAAA,IAAA,mBAAA,EAAA,MAAA,IAAA,EAAA,IAAe,MAAA,IAAA,mBAAA,EAAA,MAAA,MAAA,EAAA,GACxD,CAED,WAAA,GACE,GACE,QAAA,EACA,UAAA,IACA,MAAA,GACD,CACD,GACE,QAAA,EACA,UAAA,GACA,MAAA,IACD,CACF,CAED,WAAA,IACE,GACE,QAAA,EACA,UAAA,GACA,MAAA,IACD,CACD,GACE,QAAA,EACA,UAAA,IACA,MAAA,GACD,CACF,CAED,CA1BA,GA2BE,UAAA,GAAA,KAAA,KAAA,QACD,CAED,CAjBA,IAkBE,UAAA,IAAA,KAAA,KAAA,QACD",
+  "names": []
+}

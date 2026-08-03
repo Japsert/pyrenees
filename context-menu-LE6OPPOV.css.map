@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/context-menu/context-menu.css"],
+  "sourcesContent": ["@keyframes in {\n  from {\n    opacity: 0;\n    transform: scale(95%);\n  }\n  to {\n    opacity: 1;\n    transform: scale(100%);\n  }\n}\n\n@keyframes out {\n  from {\n    opacity: 1;\n    transform: scale(100%);\n  }\n  to {\n    opacity: 0;\n    transform: scale(95%);\n  }\n}\n\n.in {\n  animation: in 150ms ease forwards;\n}\n\n.out {\n  animation: out 50ms ease forwards;\n}\n"],
+  "mappings": "AAAA,WAAA,GACE,GACE,QAAA,EACA,UAAA,MAAA,IACF,CACA,GACE,QAAA,EACA,UAAA,MAAA,EACF,CACF,CAEA,WAAA,IACE,GACE,QAAA,EACA,UAAA,MAAA,EACF,CACA,GACE,QAAA,EACA,UAAA,MAAA,IACF,CACF,CAEA,CAtBA,GAuBE,UAAA,GAAA,KAAA,KAAA,QACF,CAEA,CAfA,IAgBE,UAAA,IAAA,KAAA,KAAA,QACF",
+  "names": []
+}

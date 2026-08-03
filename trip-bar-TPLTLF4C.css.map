@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/trip-bar/%3Cno source%3E", "src/app/trip-bar/trip-bar.css"],
+  "sourcesContent": [null, "@reference \"tailwindcss\";\n\n#create-route-button.mouse-is-near {\n  @apply opacity-100;\n}\n\n#create-route-button:hover {\n  /*@apply;*/\n}\n"],
+  "mappings": "ACEA,CAAA,mBAAA,CAAA,cACS,QAAA,IACR",
+  "names": []
+}
